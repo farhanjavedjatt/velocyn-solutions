@@ -159,7 +159,7 @@ export default function CaseReel() {
   const activeIndex = Math.min(n - 1, Math.floor(padded * n));
 
   return (
-    <section className="scene cases-v2" data-scene="03" ref={sectionRef} id="work">
+    <section className="scene cases-v2 section-dark" data-scene="03" ref={sectionRef} id="work">
       <div className="cases-v2-sticky">
         <div className="cases-v2-chapter">
           <span className="mono-label">Selected work</span>

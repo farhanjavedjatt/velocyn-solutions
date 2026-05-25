@@ -5,27 +5,26 @@
    ========================================================================= */
 
 :root {
-  /* Velocyn brand — DARK MODE.
-     Cream type on a deep warm-navy near-black. Inverted from the cream
-     paper palette; the V scrub frames are also negated so they match. */
-  --bg:        #0E1729;                /* deep warm navy — primary surface */
-  --bg-2:      #16223C;                /* slightly elevated surface */
-  --bg-3:      #1D2C4A;                /* deepest elevation — wells / inset */
-  --ink:       rgb(244, 237, 214);     /* cream — primary type */
-  --ink-strong:#FFFCF0;                /* near-white for emphasis */
-  --ink-dim:   rgba(244, 237, 214, 0.62);
-  --ink-mute:  rgba(244, 237, 214, 0.38);
-  --rule:      rgba(244, 237, 214, 0.16);
-  --rule-soft: rgba(244, 237, 214, 0.08);
-  --accent:    rgb(244, 237, 214);
-  --warn:      #E2876A;
+  /* Velocyn brand — LIGHT (default).
+     Navy ink on cream paper. The hero retains this palette. Sections
+     below the hero opt into dark via `.section-dark`. */
+  --bg:        #F5EDDB;                /* cream — primary surface */
+  --bg-2:      #EFE5CC;                /* slightly deeper cream */
+  --bg-3:      #E8DCBE;                /* deepest cream */
+  --ink:       #1D3461;                /* navy — primary type */
+  --ink-strong:#11214A;                /* deeper navy for emphasis */
+  --ink-dim:   rgba(29, 52, 97, 0.62);
+  --ink-mute:  rgba(29, 52, 97, 0.38);
+  --rule:      rgba(29, 52, 97, 0.18);
+  --rule-soft: rgba(29, 52, 97, 0.09);
+  --accent:    #1D3461;
+  --warn:      #B5421E;
 
-  /* Pre-computed companion rgba values for shadows / halos.
-     --bg-rgb mirrors the bg color, --ink-rgb mirrors the ink color.
-     Used throughout the stylesheet so other declarations can stay
-     theme-agnostic via rgba(var(--bg-rgb), alpha). */
-  --bg-rgb:        14, 23, 41;
-  --ink-rgb:       244, 237, 214;
+  /* Companion RGB tokens — used in `rgba(var(--bg-rgb), alpha)` throughout
+     the stylesheet so theme switches automatically affect every halo /
+     wash / form surface. */
+  --bg-rgb:        245, 237, 219;
+  --ink-rgb:       29, 52, 97;
 
   --serif: "Instrument Serif", "Times New Roman", serif;
   --sans:  "Inter", system-ui, -apple-system, sans-serif;
@@ -34,6 +33,10 @@
   --frame: clamp(10px, 1.4vw, 18px);
   --gutter: clamp(16px, 4vw, 56px);
   --ease:  cubic-bezier(.22,.61,.36,1);
+
+  /* Fixed top-bar height. Every sticky section uses this + breathing room
+     so chapter-mark labels never duck under the bar. */
+  --topbar-h: clamp(72px, 9vh, 116px);
 
   /* Fluid type scale (mobile → desktop). Used by sections that opted in.
      Values picked from a 320 → 1440px viewport range. */
@@ -45,21 +48,44 @@
   --t-meta:     clamp(10px, 0.75vw, 11px);
 }
 
-/* Honor a `data-theme="light"` override (toggle hook for the future) */
-:root[data-theme="light"] {
-  --bg:        rgb(245, 237, 219);
-  --bg-2:      rgb(239, 229, 204);
-  --bg-3:      rgb(232, 220, 190);
-  --ink:       rgb(29, 52, 97);
-  --ink-strong:rgb(17, 33, 74);
-  --ink-dim:   rgba(29, 52, 97, 0.62);
-  --ink-mute:  rgba(29, 52, 97, 0.38);
-  --rule:      rgba(29, 52, 97, 0.18);
-  --rule-soft: rgba(29, 52, 97, 0.09);
-  --accent:    rgb(29, 52, 97);
-  --warn:      #B5421E;
-  --bg-rgb:    245, 237, 219;
-  --ink-rgb:   29, 52, 97;
+/* PER-SECTION DARK PALETTE
+   Applied to <section class="scene section-dark"> on Services, Cases,
+   Stack, CTA. Overrides --bg / --ink / --bg-rgb / --ink-rgb so every
+   descendant declaration that uses these tokens inverts automatically —
+   text halos, washes, form inputs, stack-chip borders, the discipline
+   pill highlight, etc. */
+.section-dark {
+  --bg:        #0E1729;
+  --bg-2:      #16223C;
+  --bg-3:      #1D2C4A;
+  --ink:       rgb(244, 237, 214);
+  --ink-strong:#FFFCF0;
+  --ink-dim:   rgba(244, 237, 214, 0.62);
+  --ink-mute:  rgba(244, 237, 214, 0.38);
+  --rule:      rgba(244, 237, 214, 0.16);
+  --rule-soft: rgba(244, 237, 214, 0.08);
+  --accent:    rgb(244, 237, 214);
+  --warn:      #E2876A;
+  --bg-rgb:    14, 23, 41;
+  --ink-rgb:   244, 237, 214;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+/* Optional top-level theme toggle hook (no UI yet) — sets the dark
+   palette on the whole document. */
+:root[data-theme="dark"] {
+  --bg:        #0E1729;
+  --bg-2:      #16223C;
+  --bg-3:      #1D2C4A;
+  --ink:       rgb(244, 237, 214);
+  --ink-strong:#FFFCF0;
+  --ink-dim:   rgba(244, 237, 214, 0.62);
+  --ink-mute:  rgba(244, 237, 214, 0.38);
+  --rule:      rgba(244, 237, 214, 0.16);
+  --rule-soft: rgba(244, 237, 214, 0.08);
+  --bg-rgb:    14, 23, 41;
+  --ink-rgb:   244, 237, 214;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -119,23 +145,26 @@ a { color: inherit; text-decoration: none; }
   will-change: transform;
   mix-blend-mode: difference;
 }
+/* Cursor uses pure white + mix-blend-mode: difference so the same cursor
+   reads as near-black on cream backgrounds AND as near-cream on the dark
+   sections — automatic two-color adaptation without per-section toggles. */
 .cursor-dot {
   width: 6px;
   height: 6px;
-  background: var(--ink);
+  background: #FFFFFF;
   transform: translate(-50%, -50%);
 }
 .cursor-ring {
   width: 32px;
   height: 32px;
-  border: 1px solid var(--ink);
+  border: 1px solid #FFFFFF;
   transform: translate(-50%, -50%);
   transition: width 0.25s var(--ease), height 0.25s var(--ease), opacity 0.2s;
 }
 .cursor-ring.is-magnetic {
   width: 64px;
   height: 64px;
-  background: rgba(var(--ink-rgb), 0.06);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 /* --------------------------------------------------------------- frame --- */
@@ -177,21 +206,31 @@ a { color: inherit; text-decoration: none; }
 }
 .chrome > * { pointer-events: auto; }
 .chrome.top    { top: 0; }
+
+/* DARK-SECTION CHROME — applied via JS in App.jsx when scene > 1.
+   The bar's frosted background flips from cream to deep navy, all text
+   becomes cream, and the CTA pill inverts to a cream outline. */
 .chrome.is-on-dark {
-  color: rgba(var(--bg-rgb), 0.62);
+  color: rgba(244, 237, 214, 0.62);
+}
+.chrome.is-on-dark.top {
+  background: rgba(14, 23, 41, 0.92);
+  border-bottom: 1px solid rgba(244, 237, 214, 0.10);
 }
 .chrome.is-on-dark .logo,
 .chrome.is-on-dark .nav a,
 .chrome.is-on-dark .nav-cta {
-  color: var(--bg);
+  color: rgb(244, 237, 214);
 }
 .chrome.is-on-dark .nav-cta {
-  border-color: rgba(var(--bg-rgb), 0.6);
+  border-color: rgba(244, 237, 214, 0.55);
 }
 .chrome.is-on-dark .nav-cta:hover {
-  background: var(--bg);
-  color: var(--ink-strong);
+  background: rgb(244, 237, 214);
+  color: rgb(14, 23, 41);
+  border-color: rgb(244, 237, 214);
 }
+.chrome.is-on-dark .nav a:hover { color: #FFFFFF; }
 .chrome { transition: color 0.5s var(--ease); }
 .chrome .logo, .chrome .nav a, .chrome .nav-cta {
   transition: color 0.5s var(--ease), border-color 0.5s var(--ease), background 0.3s var(--ease);
@@ -674,7 +713,7 @@ main { position: relative; z-index: 1; }
 }
 .tech-chapter {
   position: absolute;
-  top: calc(var(--frame) + 78px);
+  top: calc(var(--topbar-h) + 32px);
   left: calc(var(--frame) + 56px);
   z-index: 2;
 }
@@ -813,7 +852,10 @@ main { position: relative; z-index: 1; }
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(0, 0.95fr);
   align-items: stretch;
-  padding: calc(var(--frame) + 64px) calc(var(--frame) + 56px) calc(var(--frame) + 64px);
+  /* Use the same `--topbar-h + 32px` offset as cases-v2-chapter and
+     tech-chapter so all three chapter-marks sit on the same horizontal
+     guide line below the fixed top bar. */
+  padding: calc(var(--topbar-h) + 32px) calc(var(--frame) + 56px) calc(var(--frame) + 56px);
   gap: 48px;
   overflow: hidden;
 }
@@ -822,7 +864,7 @@ main { position: relative; z-index: 1; }
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  padding-top: 24px;
+  padding-top: 0; /* chapter alignment lives on .services-sticky padding */
 }
 .services-left .chapter-mark {
   margin-bottom: 64px;
@@ -1025,7 +1067,7 @@ main { position: relative; z-index: 1; }
 }
 .cases-v2-chapter {
   position: absolute;
-  top: calc(var(--frame) + 78px);
+  top: calc(var(--topbar-h) + 32px);
   left: calc(var(--frame) + 56px);
   z-index: 4;
 }
@@ -1038,7 +1080,7 @@ main { position: relative; z-index: 1; }
   inset: 0;
   display: flex;
   align-items: center;
-  padding: calc(var(--frame) + 130px) calc(var(--frame) + 56px) calc(var(--frame) + 90px);
+  padding: calc(var(--topbar-h) + 60px) calc(var(--frame) + 56px) calc(var(--frame) + 90px);
   opacity: 0;
   transform: translateY(40px) scale(0.985);
   transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
@@ -1049,25 +1091,8 @@ main { position: relative; z-index: 1; }
   transform: translateY(0) scale(1);
   pointer-events: auto;
 }
-/* HUGE background case number — sits behind everything */
-.case-bignum {
-  position: absolute;
-  right: -2vw;
-  bottom: -8vh;
-  font-family: var(--serif);
-  font-size: clamp(220px, 36vw, 620px);
-  line-height: 0.78;
-  color: var(--ink);
-  opacity: 0.05;
-  pointer-events: none;
-  user-select: none;
-  display: inline-flex;
-  align-items: baseline;
-  letter-spacing: -0.03em;
-  z-index: 0;
-}
-.case-bignum .serif:first-of-type { font-style: italic; }
-.case-bignum-sep { opacity: 0.55; padding: 0 4px; }
+/* Background case watermark — hidden per user request. */
+.case-bignum { display: none !important; }
 
 .case-grid {
   position: relative;
@@ -1200,15 +1225,31 @@ main { position: relative; z-index: 1; }
    ====================================================================== */
 .cta {
   position: relative;
-  padding: 120px calc(var(--frame) + 56px) 80px;
+  padding: calc(var(--topbar-h) + 56px) calc(var(--frame) + 56px) 80px;
   border-top: 1px solid var(--rule);
   overflow: hidden;
 }
+/* Two-column top row: editorial headline on the left, contact form on
+   the right. Collapses to a single column on mobile. */
+.cta-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 64px;
+  align-items: start;
+  margin-bottom: 88px;
+}
+.cta-top-left { display: flex; flex-direction: column; gap: 28px; }
+.cta-top-right { padding-top: 8px; }
+.cta-top-right .contact-form {
+  margin-top: 0;
+  margin-bottom: 0;
+  max-width: 100%;
+}
 .cta .cta-headline {
-  font-size: clamp(48px, 7vw, 108px);
-  line-height: 0.95;
-  margin-bottom: 56px;
-  max-width: 18ch;
+  font-size: clamp(40px, 5.6vw, 88px);
+  line-height: 0.98;
+  margin-bottom: 0;
+  max-width: 13ch;
 }
 .cta-row {
   display: flex;
@@ -1297,14 +1338,11 @@ main { position: relative; z-index: 1; }
   font-weight: 450;
 }
 .cta-footer-col li a:hover { color: var(--ink-strong); }
-.cta-footer-brand .v-mark {
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: 56px;
-  line-height: 1;
-  color: var(--ink);
-  margin-bottom: 16px;
+.cta-footer-brand-mark {
+  height: 56px;
+  width: auto;
   display: block;
+  margin-bottom: 20px;
 }
 .cta-footer-brand p {
   font-size: 15px;
@@ -1706,14 +1744,20 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
 
   /* CTA + footer */
   .cta {
-    padding: 80px 20px 64px;
+    padding: calc(var(--topbar-h) + 24px) 20px 64px;
   }
+  .cta-top {
+    grid-template-columns: 1fr;
+    gap: 36px;
+    margin-bottom: 56px;
+  }
+  .cta-top-right { padding-top: 0; }
   .cta .cta-headline {
     font-size: clamp(36px, 9vw, 64px);
     max-width: none;
-    margin-bottom: 32px;
+    margin-bottom: 0;
   }
-  .contact-form { margin-bottom: 48px; }
+  .contact-form { margin-bottom: 0; }
   .cta-row {
     flex-direction: column;
     align-items: flex-start;

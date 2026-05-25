@@ -89,7 +89,7 @@ export default function TechFlyby() {
   }
 
   return (
-    <section className="scene tech" data-scene="04" ref={sectionRef} id="stack">
+    <section className="scene tech section-dark" data-scene="04" ref={sectionRef} id="stack">
       <div className="tech-sticky">
         <div className="tech-chapter">
           <span className="mono-label">The stack</span>

@@ -11,15 +11,18 @@ const CALENDLY_URL =
 
 export default function CTA() {
   return (
-    <section className="scene cta" data-scene="05" id="contact">
-      <span className="mono-label" style={{ marginBottom: 32, display: "inline-flex" }}>
-        Tell us what you&apos;re building
-      </span>
-      <h2 className="serif cta-headline">
-        Let&apos;s make <span className="it">something</span> ship.
-      </h2>
-
-      <ContactForm />
+    <section className="scene cta section-dark" data-scene="05" id="contact">
+      <div className="cta-top">
+        <div className="cta-top-left">
+          <span className="mono-label">Tell us what you&apos;re building</span>
+          <h2 className="serif cta-headline">
+            Let&apos;s make <span className="it">something</span> ship.
+          </h2>
+        </div>
+        <div className="cta-top-right">
+          <ContactForm />
+        </div>
+      </div>
 
       <div className="cta-row">
         <div className="field">
@@ -64,7 +67,11 @@ export default function CTA() {
 
       <footer className="cta-footer">
         <div className="cta-footer-col cta-footer-brand">
-          <span className="v-mark">V</span>
+          <img
+            src="/velocyn-logo-cream.png"
+            alt="Velocyn Solutions"
+            className="cta-footer-brand-mark"
+          />
           <p>
             A small studio building web, mobile, and AI products for founders
             who&apos;d rather ship than sit in meetings.

@@ -49,8 +49,8 @@ export default function App() {
       <Grain />
       <Frame />
       <Cursor />
-      <TopBar />
-      <ProgressLine progress={overallProgress} />
+      <TopBar onDark={scene > 1} />
+      <ProgressLine progress={overallProgress} onDark={scene > 1} />
 
       <main>
         <Hero />

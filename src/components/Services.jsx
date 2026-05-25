@@ -183,7 +183,7 @@ export default function Services() {
   }, [activeIndex]);
 
   return (
-    <section className="scene services" data-scene="02" ref={sectionRef} id="services">
+    <section className="scene services section-dark" data-scene="02" ref={sectionRef} id="services">
       <div className="services-sticky">
 
         <div className="services-left">
