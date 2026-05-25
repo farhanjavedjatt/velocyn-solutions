@@ -5,26 +5,61 @@
    ========================================================================= */
 
 :root {
-  /* Velocyn brand: navy ink on cream paper.
-     Navy #1D3461 · Cream #F5EDDB · White #FFFFFF */
-  --bg:        #F5EDDB;        /* cream — primary surface */
-  --bg-2:      #EFE5CC;        /* slightly deeper cream for cards/plates */
-  --bg-3:      #E8DCBE;        /* deepest cream — wells / inset */
-  --ink:       #1D3461;        /* navy — primary type */
-  --ink-strong:#11214A;        /* deeper navy for emphasis */
-  --ink-dim:   rgba(29, 52, 97, 0.62);
-  --ink-mute:  rgba(29, 52, 97, 0.38);
-  --rule:      rgba(29, 52, 97, 0.18);
-  --rule-soft: rgba(29, 52, 97, 0.09);
-  --accent:    #1D3461;        /* near-mono — accent = the navy itself */
-  --warn:      #B5421E;        /* warm rust for the rare alert */
+  /* Velocyn brand — DARK MODE.
+     Cream type on a deep warm-navy near-black. Inverted from the cream
+     paper palette; the V scrub frames are also negated so they match. */
+  --bg:        #0E1729;                /* deep warm navy — primary surface */
+  --bg-2:      #16223C;                /* slightly elevated surface */
+  --bg-3:      #1D2C4A;                /* deepest elevation — wells / inset */
+  --ink:       rgb(244, 237, 214);     /* cream — primary type */
+  --ink-strong:#FFFCF0;                /* near-white for emphasis */
+  --ink-dim:   rgba(244, 237, 214, 0.62);
+  --ink-mute:  rgba(244, 237, 214, 0.38);
+  --rule:      rgba(244, 237, 214, 0.16);
+  --rule-soft: rgba(244, 237, 214, 0.08);
+  --accent:    rgb(244, 237, 214);
+  --warn:      #E2876A;
+
+  /* Pre-computed companion rgba values for shadows / halos.
+     --bg-rgb mirrors the bg color, --ink-rgb mirrors the ink color.
+     Used throughout the stylesheet so other declarations can stay
+     theme-agnostic via rgba(var(--bg-rgb), alpha). */
+  --bg-rgb:        14, 23, 41;
+  --ink-rgb:       244, 237, 214;
 
   --serif: "Instrument Serif", "Times New Roman", serif;
   --sans:  "Inter", system-ui, -apple-system, sans-serif;
   --mono:  "JetBrains Mono", ui-monospace, "SF Mono", monospace;
 
-  --frame: 18px;               /* outer page frame margin */
+  --frame: clamp(10px, 1.4vw, 18px);
+  --gutter: clamp(16px, 4vw, 56px);
   --ease:  cubic-bezier(.22,.61,.36,1);
+
+  /* Fluid type scale (mobile → desktop). Used by sections that opted in.
+     Values picked from a 320 → 1440px viewport range. */
+  --t-display:  clamp(36px, 8vw, 132px);
+  --t-display-l: clamp(48px, 10vw, 180px);
+  --t-heading:  clamp(24px, 5vw, 56px);
+  --t-subhead:  clamp(18px, 2.4vw, 28px);
+  --t-body:     clamp(14px, 1.05vw, 17px);
+  --t-meta:     clamp(10px, 0.75vw, 11px);
+}
+
+/* Honor a `data-theme="light"` override (toggle hook for the future) */
+:root[data-theme="light"] {
+  --bg:        rgb(245, 237, 219);
+  --bg-2:      rgb(239, 229, 204);
+  --bg-3:      rgb(232, 220, 190);
+  --ink:       rgb(29, 52, 97);
+  --ink-strong:rgb(17, 33, 74);
+  --ink-dim:   rgba(29, 52, 97, 0.62);
+  --ink-mute:  rgba(29, 52, 97, 0.38);
+  --rule:      rgba(29, 52, 97, 0.18);
+  --rule-soft: rgba(29, 52, 97, 0.09);
+  --accent:    rgb(29, 52, 97);
+  --warn:      #B5421E;
+  --bg-rgb:    245, 237, 219;
+  --ink-rgb:   29, 52, 97;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -63,8 +98,8 @@ body::before {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(120% 90% at 50% -10%, rgba(29,52,97,0.04) 0%, transparent 55%),
-    radial-gradient(80% 60% at 80% 110%, rgba(29,52,97,0.05) 0%, transparent 55%);
+    radial-gradient(120% 90% at 50% -10%, rgba(var(--ink-rgb), 0.04) 0%, transparent 55%),
+    radial-gradient(80% 60% at 80% 110%, rgba(var(--ink-rgb), 0.05) 0%, transparent 55%);
 }
 
 a { color: inherit; text-decoration: none; }
@@ -100,7 +135,7 @@ a { color: inherit; text-decoration: none; }
 .cursor-ring.is-magnetic {
   width: 64px;
   height: 64px;
-  background: rgba(29, 52, 97, 0.06);
+  background: rgba(var(--ink-rgb), 0.06);
 }
 
 /* --------------------------------------------------------------- frame --- */
@@ -143,19 +178,19 @@ a { color: inherit; text-decoration: none; }
 .chrome > * { pointer-events: auto; }
 .chrome.top    { top: 0; }
 .chrome.is-on-dark {
-  color: rgba(245, 237, 219, 0.62);
+  color: rgba(var(--bg-rgb), 0.62);
 }
 .chrome.is-on-dark .logo,
 .chrome.is-on-dark .nav a,
 .chrome.is-on-dark .nav-cta {
-  color: #F5EDDB;
+  color: var(--bg);
 }
 .chrome.is-on-dark .nav-cta {
-  border-color: rgba(245, 237, 219, 0.6);
+  border-color: rgba(var(--bg-rgb), 0.6);
 }
 .chrome.is-on-dark .nav-cta:hover {
-  background: #F5EDDB;
-  color: #11214A;
+  background: var(--bg);
+  color: var(--ink-strong);
 }
 .chrome { transition: color 0.5s var(--ease); }
 .chrome .logo, .chrome .nav a, .chrome .nav-cta {
@@ -217,12 +252,12 @@ a { color: inherit; text-decoration: none; }
   left: 0;
   right: 0;
   height: 2px;
-  background: rgba(29, 52, 97, 0.12);
+  background: rgba(var(--ink-rgb), 0.12);
   z-index: 70;
   pointer-events: none;
 }
 .progress-line.is-on-dark {
-  background: rgba(245, 237, 219, 0.15);
+  background: rgba(var(--bg-rgb), 0.15);
 }
 .progress-line > span {
   display: block;
@@ -233,7 +268,7 @@ a { color: inherit; text-decoration: none; }
   transition: transform 0.15s linear;
 }
 .progress-line.is-on-dark > span {
-  background: #F5EDDB;
+  background: var(--bg);
 }
 
 /* ======================================================================
@@ -418,10 +453,10 @@ main { position: relative; z-index: 1; }
   pointer-events: none;
   background: radial-gradient(
     ellipse 70% 80% at 32% 70%,
-    rgba(245, 237, 219, 0.92) 0%,
-    rgba(245, 237, 219, 0.72) 25%,
-    rgba(245, 237, 219, 0.35) 55%,
-    rgba(245, 237, 219, 0.0) 85%
+    rgba(var(--bg-rgb), 0.92) 0%,
+    rgba(var(--bg-rgb), 0.72) 25%,
+    rgba(var(--bg-rgb), 0.35) 55%,
+    rgba(var(--bg-rgb), 0.0) 85%
   );
 }
 /* Scroll cue stays anchored at the bottom of the sticky stage. */
@@ -458,8 +493,8 @@ main { position: relative; z-index: 1; }
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(80% 60% at 18% 78%, var(--bg) 0%, rgba(245, 237, 219, 0) 55%),
-    radial-gradient(60% 50% at 96% 14%, rgba(245, 237, 219, 0.6) 0%, rgba(245, 237, 219, 0) 60%);
+    radial-gradient(80% 60% at 18% 78%, var(--bg) 0%, rgba(var(--bg-rgb), 0) 55%),
+    radial-gradient(60% 50% at 96% 14%, rgba(var(--bg-rgb), 0.6) 0%, rgba(var(--bg-rgb), 0) 60%);
   z-index: 1;
 }
 /* Old ribbon/video plate styles — no longer used. */
@@ -948,7 +983,7 @@ main { position: relative; z-index: 1; }
 .services-index li.active .marker {
   background: var(--ink);
   transform: scale(1.8);
-  box-shadow: 0 0 0 4px rgba(29, 52, 97, 0.12);
+  box-shadow: 0 0 0 4px rgba(var(--ink-rgb), 0.12);
 }
 
 .services-progress {
@@ -1315,7 +1350,7 @@ main { position: relative; z-index: 1; }
   font-size: 15px;
   font-weight: 450;
   color: var(--ink);
-  background: rgba(245, 237, 219, 0.6);
+  background: rgba(var(--bg-rgb), 0.6);
   border: 1px solid var(--rule);
   border-radius: 8px;
   padding: 12px 14px;
@@ -1327,7 +1362,7 @@ main { position: relative; z-index: 1; }
 .contact-field input:focus,
 .contact-field textarea:focus {
   border-color: var(--ink);
-  background: rgba(245, 237, 219, 0.95);
+  background: rgba(var(--bg-rgb), 0.95);
 }
 .contact-field textarea {
   min-height: 88px;
@@ -1406,8 +1441,8 @@ main { position: relative; z-index: 1; }
    ========================================================================= */
 main, main h1, main h2, main h3, main h4, main p, main li, main span, main a {
   text-shadow:
-    0 0 1px rgba(245, 237, 219, 0.85),
-    0 0 4px rgba(245, 237, 219, 0.45);
+    0 0 1px rgba(var(--bg-rgb), 0.85),
+    0 0 4px rgba(var(--bg-rgb), 0.45);
 }
 main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
   font-weight: 450;
@@ -1420,8 +1455,8 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
 .service-card h3,
 .case-title {
   text-shadow:
-    0 0 2px rgba(245, 237, 219, 0.95),
-    0 0 14px rgba(245, 237, 219, 0.55);
+    0 0 2px rgba(var(--bg-rgb), 0.95),
+    0 0 14px rgba(var(--bg-rgb), 0.55);
 }
 /* Mono labels and tiny meta type don't need a halo — they already sit on
    the cream-washed local backgrounds. */
@@ -1463,10 +1498,10 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
      under the fixed bar. */
   .chrome.top {
     padding: 14px 16px;
-    background: rgba(245, 237, 219, 0.94);
+    background: rgba(var(--bg-rgb), 0.94);
     backdrop-filter: blur(14px) saturate(1.2);
     -webkit-backdrop-filter: blur(14px) saturate(1.2);
-    border-bottom: 1px solid rgba(29, 52, 97, 0.08);
+    border-bottom: 1px solid rgba(var(--ink-rgb), 0.08);
   }
   .chrome .nav { display: none; }
   .chrome .logo img { height: 28px; }
@@ -1496,10 +1531,10 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
     inset: -120px -120px -160px -120px;
     background: radial-gradient(
       ellipse 110% 90% at 50% 70%,
-      rgba(245, 237, 219, 0.94) 0%,
-      rgba(245, 237, 219, 0.70) 30%,
-      rgba(245, 237, 219, 0.30) 65%,
-      rgba(245, 237, 219, 0.0) 95%
+      rgba(var(--bg-rgb), 0.94) 0%,
+      rgba(var(--bg-rgb), 0.70) 30%,
+      rgba(var(--bg-rgb), 0.30) 65%,
+      rgba(var(--bg-rgb), 0.0) 95%
     );
   }
   .hero-panel .hero-headline {
@@ -1622,7 +1657,7 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
   }
   .services-index li.active .marker {
     transform: scale(1.5);
-    box-shadow: 0 0 0 3px rgba(29, 52, 97, 0.12);
+    box-shadow: 0 0 0 3px rgba(var(--ink-rgb), 0.12);
   }
   .services-foot { display: none; }
   .services-progress { display: none; }
