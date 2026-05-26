@@ -891,7 +891,7 @@ main { position: relative; z-index: 1; }
   padding-top: 0; /* chapter alignment lives on .services-sticky padding */
 }
 .services-left .chapter-mark {
-  margin-bottom: 40px;
+  margin-bottom: 16px;
 }
 
 .service-stage {
