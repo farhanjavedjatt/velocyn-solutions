@@ -157,15 +157,16 @@ async function loadWebpFrames(base, total, onProgress, isMobile) {
   };
 
   /* Fire all frame requests immediately. Await the first frame quickly
-     so the canvas can init, then await everything else so we don't hide
-     the loading screen until all 768 frames are truly in memory. */
+     so the canvas can init. Then wait for all frames OR 10s max —
+     whichever comes first — so first-time visitors aren't stuck forever. */
   const eagerEnd = Math.min(total, isMobile ? 96 : 256);
   const eager = [];
   for (let i = 0; i < eagerEnd; i++) eager.push(loadOne(i));
   await Promise.race([eager[0], new Promise((r) => setTimeout(r, 5000))]);
   const rest = [];
   for (let i = eagerEnd; i < total; i++) rest.push(loadOne(i));
-  await Promise.all([...eager, ...rest]);
+  const maxWait = new Promise((r) => setTimeout(r, 10000));
+  await Promise.race([Promise.all([...eager, ...rest]), maxWait]);
   return bmps;
 }
 
@@ -192,7 +193,7 @@ export default function SiteScrub({
     return () => v.removeEventListener("ended", restart);
   }, [loadingVisible]);
 
-  /* Lock scroll while loading, unlock as soon as loading is done */
+  /* Lock scroll + hide nav while loading, unlock as soon as loading is done */
   useEffect(() => {
     const blockWheel = (e) => e.preventDefault();
     const blockTouch = (e) => e.preventDefault();
@@ -200,11 +201,13 @@ export default function SiteScrub({
     if (loadingVisible) {
       document.documentElement.style.overflow = "hidden";
       document.body.style.overflow = "hidden";
+      document.body.setAttribute("data-loading", "");
       window.addEventListener("wheel", blockWheel, { passive: false });
       window.addEventListener("touchmove", blockTouch, { passive: false });
     } else {
       document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
+      document.body.removeAttribute("data-loading");
       window.removeEventListener("wheel", blockWheel);
       window.removeEventListener("touchmove", blockTouch);
     }
@@ -212,6 +215,7 @@ export default function SiteScrub({
     return () => {
       document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
+      document.body.removeAttribute("data-loading");
       window.removeEventListener("wheel", blockWheel);
       window.removeEventListener("touchmove", blockTouch);
     };
@@ -313,7 +317,7 @@ export default function SiteScrub({
          bitmaps. WebCodecs path is kept for future use but disabled
          here while the WebP density is the priority. */
       const base = useMobile ? srcBaseSm : srcBase;
-      const minDelay = new Promise((r) => setTimeout(r, 6000));
+      const minDelay = new Promise((r) => setTimeout(r, 4000));
       const bmps = await loadWebpFrames(base, webpTotal, () => {
         if (cancelled) return;
         /* Init canvas on first frame so it's ready when loading finishes */

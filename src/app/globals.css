@@ -420,29 +420,31 @@ main { position: relative; width: 100%; max-width: 100%; overflow-x: clip; }
 .site-scrub-canvas.is-ready {
   opacity: 1;
 }
+body[data-loading] .chrome .nav,
+body[data-loading] .chrome .nav-cta { visibility: hidden; pointer-events: none; }
+
 .site-loading-overlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: rgb(244, 237, 214);
+  background: var(--bg);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
 }
 .site-loading-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
+  width: min(640px, 90vw);
+  height: auto;
   display: block;
+  border-radius: 12px;
+  overflow: hidden;
+  clip-path: inset(12% 0 12% 0 round 12px);
 }
 @media (max-width: 900px) {
   .site-loading-video {
     width: 100%;
-    height: auto;
-    object-fit: unset;
-    transform: none;
+    border-radius: 0;
     clip-path: inset(12% 0 12% 0);
   }
 }
