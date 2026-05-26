@@ -424,10 +424,11 @@ main { position: relative; width: 100%; max-width: 100%; overflow-x: clip; }
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: var(--bg);
+  background: rgb(244, 237, 214);
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 .site-loading-video {
   width: 100%;
@@ -435,6 +436,15 @@ main { position: relative; width: 100%; max-width: 100%; overflow-x: clip; }
   object-fit: cover;
   object-position: center;
   display: block;
+}
+@media (max-width: 900px) {
+  .site-loading-video {
+    width: 100%;
+    height: auto;
+    object-fit: unset;
+    transform: none;
+    clip-path: inset(12% 0 12% 0);
+  }
 }
 /* Hero-scoped scrub: scrub plays inside the hero only. Sections below
    the hero return to their normal solid cream backgrounds — no washes,
@@ -954,7 +964,7 @@ main { position: relative; z-index: 1; }
 .services-right {
   position: relative;
   border-left: 1px solid var(--rule);
-  padding: 24px 0 24px 56px;
+  padding: 24px 0 0 56px;
   display: flex;
   flex-direction: column;
 }
@@ -972,6 +982,7 @@ main { position: relative; z-index: 1; }
   flex-direction: column;
   gap: 0;
   margin-top: 8px;
+  padding-bottom: 24px;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -981,15 +992,15 @@ main { position: relative; z-index: 1; }
 .services-index li {
   border: 1px solid rgba(244, 237, 214, 0.18);
   border-left: 3px solid rgba(244, 237, 214, 0.18);
-  padding: 14px 12px;
-  margin-bottom: 4px;
+  padding: 10px 12px;
+  margin-bottom: 3px;
   border-radius: 8px;
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr) 14px;
   align-items: center;
   gap: 18px;
   font-family: var(--serif);
-  font-size: 20px;
+  font-size: 18px;
   color: var(--ink-mute);
   transition:
     color 0.45s var(--ease),
@@ -1027,7 +1038,7 @@ main { position: relative; z-index: 1; }
 .services-index li.active {
   color: var(--ink);
   background: var(--bg-2);
-  font-size: 24px;
+  font-size: 21px;
   border-color: rgba(244, 237, 214, 0.35);
   border-left-color: var(--accent);
   padding-left: 20px;

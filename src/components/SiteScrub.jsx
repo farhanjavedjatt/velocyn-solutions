@@ -194,12 +194,31 @@ export default function SiteScrub({
 
   /* Lock scroll while loading video is shown */
   useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    const lock = () => {
+      document.documentElement.style.overflow = "hidden";
+      document.body.style.overflow = "hidden";
+    };
+    const unlock = () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    };
+    const blockWheel = (e) => e.preventDefault();
+    const blockTouch = (e) => e.preventDefault();
+
+    lock();
+    window.addEventListener("wheel", blockWheel, { passive: false });
+    window.addEventListener("touchmove", blockTouch, { passive: false });
+
+    return () => {
+      unlock();
+      window.removeEventListener("wheel", blockWheel);
+      window.removeEventListener("touchmove", blockTouch);
+    };
   }, []);
 
   useEffect(() => {
     if (!loadingVisible) {
+      document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
     }
   }, [loadingVisible]);
