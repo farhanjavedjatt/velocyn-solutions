@@ -1639,7 +1639,7 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
     display: flex;
     flex-direction: column;
   }
-  .services-left .chapter-mark { margin-bottom: 12px; }
+  .services-left .chapter-mark { margin-bottom: 36px; }
 
   .service-stage {
     flex: 1 1 auto;
@@ -1654,7 +1654,7 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
   .service-card h3 {
     font-size: clamp(26px, 7vw, 42px);
     max-width: none;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     line-height: 1.02;
   }
   .service-card p {
@@ -1665,11 +1665,11 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
   }
   .service-card .bullets {
     grid-template-columns: 1fr;
-    font-size: 9.5px;
-    gap: 2px;
+    font-size: 10.5px;
+    gap: 5px;
     max-width: none;
   }
-  .service-card-num { margin-bottom: 6px; }
+  .service-card-num { margin-bottom: 10px; }
 
   /* Disciplines hidden on mobile — card takes full height */
   .services-right {
@@ -1717,14 +1717,17 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
     left: 20px;
   }
   .case-card-v2 {
-    padding: calc(var(--topbar-h) + 48px) 20px 20px;
+    padding: calc(var(--topbar-h) + 60px) 20px 20px;
     align-items: flex-start;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
+  .case-card-v2 > .case-grid > .case-lead > .mono-label {
+    margin-top: 8px;
+  }
   .case-grid {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 24px;
     align-items: stretch;
   }
   .case-bignum { display: none; }
@@ -1733,24 +1736,25 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
     border-right: none;
     border-bottom: 1px solid var(--rule);
     padding-bottom: 20px;
-    gap: 10px;
+    gap: 12px;
   }
   .case-leadnum-v { font-size: clamp(44px, 16vw, 80px); }
-  .case-leadnum-unit { font-size: 12px; }
-  .case-meta { gap: 18px; }
+  .case-leadnum-unit { font-size: 13px; letter-spacing: 0.06em; }
+  .case-meta { gap: 20px; }
   .case-title { font-size: clamp(20px, 5.5vw, 34px); max-width: none; }
   .case-substats {
     grid-template-columns: 1fr 1fr;
-    gap: 12px 16px;
+    gap: 14px 16px;
     padding: 16px 0;
   }
   .case-substat-v { font-size: clamp(20px, 5vw, 28px); }
-  .case-substat-l { font-size: 9px; margin-top: 6px; }
+  .case-substat-l { font-size: 10.5px; margin-top: 6px; }
   .case-row {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 12px;
   }
-  .case-row-v { font-size: 13px; }
+  .case-row-l { font-size: 10px; }
+  .case-row-v { font-size: 13.5px; }
   .case-stack { flex-wrap: wrap; gap: 6px; }
   .case-stack-chip { font-size: 10px; padding: 5px 10px; }
   .cases-v2-progress { left: 20px; right: 20px; bottom: 12px; }
@@ -1760,8 +1764,13 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
   .tech-sticky { padding: 80px 0 48px; }
   .tech-chapter { padding-left: 20px; margin-bottom: 32px; }
   .tech-track { gap: 48px; padding: 0 20px; }
-  .tech-intro h2 { font-size: clamp(28px, 7vw, 48px); }
-  .tech-intro p { font-size: 14px; max-width: 36ch; }
+  .tech-intro {
+    padding-top: calc(var(--topbar-h) + 24px);
+    justify-content: flex-start;
+    width: min(100vw - 40px, 480px);
+  }
+  .tech-intro h2 { font-size: clamp(36px, 10vw, 56px); }
+  .tech-intro p { font-size: 15.5px; max-width: 36ch; margin-top: 20px; }
   .tech-cluster { min-width: 280px; }
   .tech-item-name { font-size: 18px; }
   .tech-item-ver { font-size: 10px; }
@@ -1835,7 +1844,7 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
   .services-sticky { padding: 104px 18px 10px; }
   .service-card h3 { font-size: clamp(26px, 8vw, 38px); }
 
-  .case-card-v2 { padding: calc(var(--topbar-h) + 40px) 18px 16px; }
+  .case-card-v2 { padding: calc(var(--topbar-h) + 56px) 18px 16px; }
   .case-leadnum-v { font-size: clamp(40px, 16vw, 72px); }
   .case-title { font-size: clamp(18px, 6vw, 28px); }
   .case-substats { grid-template-columns: 1fr 1fr; padding: 12px 0; }
@@ -1843,6 +1852,8 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
 
   .tech-chapter { padding-left: 18px; }
   .tech-track { padding: 0 18px; gap: 36px; }
+  .tech-intro h2 { font-size: clamp(34px, 10vw, 52px); }
+  .tech-intro p { font-size: 15px; }
   .tech-cluster { min-width: 240px; }
 
   .cta { padding: 64px 18px 48px; }
