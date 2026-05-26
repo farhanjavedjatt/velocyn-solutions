@@ -58,8 +58,6 @@ const SERVICES = [
       "Published MCP plugins on npm",
       "Multi-channel agent gateways (WhatsApp · Slack · Telegram · voice)",
       "Drizzle / Postgres backed MCP state",
-      "Auth, scoping, and per-tenant tool surfaces",
-      "Anthropic SDK · prompt caching · tool batching",
     ],
   },
   {

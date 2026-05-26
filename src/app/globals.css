@@ -34,9 +34,11 @@
   --gutter: clamp(16px, 4vw, 56px);
   --ease:  cubic-bezier(.22,.61,.36,1);
 
-  /* Fixed top-bar height. Every sticky section uses this + breathing room
-     so chapter-mark labels never duck under the bar. */
+  /* Fixed top-bar height — used for scroll-based estimates. */
   --topbar-h: clamp(72px, 9vh, 116px);
+  /* Actual rendered chrome height: padding (frame+18px) × 2 + logo 44px.
+     Use this for positioning elements that must clear the fixed nav bar. */
+  --chrome-h: calc(var(--frame) * 2 + 80px);
 
   /* Fluid type scale (mobile → desktop). Used by sections that opted in.
      Values picked from a 320 → 1440px viewport range. */
@@ -713,7 +715,7 @@ main { position: relative; z-index: 1; }
 }
 .tech-chapter {
   position: absolute;
-  top: calc(var(--topbar-h) + 32px);
+  top: calc(var(--chrome-h) + 20px);
   left: calc(var(--frame) + 56px);
   z-index: 2;
 }
@@ -729,6 +731,7 @@ main { position: relative; z-index: 1; }
   flex-shrink: 0;
   width: min(720px, 80vw);
   padding-right: 24px;
+  padding-top: calc(var(--chrome-h) + 56px);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -749,7 +752,7 @@ main { position: relative; z-index: 1; }
   flex-shrink: 0;
   width: min(640px, 88vw);
   border-left: 1px solid var(--rule);
-  padding: 0 0 0 48px;
+  padding: calc(var(--chrome-h) + 48px) 0 32px 48px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -855,7 +858,7 @@ main { position: relative; z-index: 1; }
   /* Use the same `--topbar-h + 32px` offset as cases-v2-chapter and
      tech-chapter so all three chapter-marks sit on the same horizontal
      guide line below the fixed top bar. */
-  padding: calc(var(--topbar-h) + 32px) calc(var(--frame) + 56px) calc(var(--frame) + 56px);
+  padding: calc(var(--chrome-h) + 20px) calc(var(--frame) + 56px) calc(var(--frame) + 8px);
   gap: 48px;
   overflow: hidden;
 }
@@ -867,13 +870,14 @@ main { position: relative; z-index: 1; }
   padding-top: 0; /* chapter alignment lives on .services-sticky padding */
 }
 .services-left .chapter-mark {
-  margin-bottom: 64px;
+  margin-bottom: 40px;
 }
 
 .service-stage {
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
+  overflow: hidden;
 }
 .service-card {
   position: absolute;
@@ -900,12 +904,12 @@ main { position: relative; z-index: 1; }
   letter-spacing: 0.24em;
   color: var(--ink-mute);
   text-transform: uppercase;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 .service-card h3 {
-  font-size: clamp(44px, 5.4vw, 88px);
+  font-size: clamp(36px, 4.2vw, 68px);
   line-height: 0.98;
-  margin-bottom: 32px;
+  margin-bottom: 20px;
   max-width: 14ch;
 }
 .service-card p {
@@ -913,7 +917,7 @@ main { position: relative; z-index: 1; }
   line-height: 1.6;
   color: var(--ink-dim);
   max-width: 50ch;
-  margin-bottom: 36px;
+  margin-bottom: 20px;
 }
 .service-card .bullets {
   list-style: none;
@@ -949,7 +953,7 @@ main { position: relative; z-index: 1; }
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--ink-mute);
-  margin-bottom: 28px;
+  margin-bottom: 16px;
 }
 .services-index {
   list-style: none;
@@ -957,11 +961,17 @@ main { position: relative; z-index: 1; }
   flex-direction: column;
   gap: 0;
   margin-top: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
 }
+.services-index::-webkit-scrollbar { display: none; }
 .services-index li {
-  border-top: 1px solid var(--rule);
-  padding: 16px 12px;
-  margin: 0 -12px;
+  border: 1px solid rgba(244, 237, 214, 0.18);
+  border-left: 3px solid rgba(244, 237, 214, 0.18);
+  padding: 14px 12px;
+  margin-bottom: 4px;
   border-radius: 8px;
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr) 14px;
@@ -973,6 +983,7 @@ main { position: relative; z-index: 1; }
   transition:
     color 0.45s var(--ease),
     background 0.45s var(--ease),
+    border-color 0.45s var(--ease),
     font-size 0.45s var(--ease),
     font-weight 0.45s var(--ease),
     padding 0.45s var(--ease);
@@ -984,7 +995,6 @@ main { position: relative; z-index: 1; }
   text-overflow: ellipsis;
   transition: letter-spacing 0.45s var(--ease);
 }
-.services-index li:last-child { border-bottom: 1px solid var(--rule); }
 .services-index li .n {
   font-family: var(--mono);
   font-size: 10px;
@@ -1003,15 +1013,12 @@ main { position: relative; z-index: 1; }
   align-self: center;
   transition: background 0.4s var(--ease), transform 0.4s var(--ease), box-shadow 0.4s var(--ease);
 }
-/* ACTIVE-ROW HIGHLIGHT — substantially stronger so scroll position is
-   obvious at a glance. Bigger type, ink color (not dim), cream-deeper
-   background pill, navy marker with a halo, and a thicker left edge. */
 .services-index li.active {
   color: var(--ink);
   background: var(--bg-2);
   font-size: 24px;
-  border-radius: 8px;
-  box-shadow: inset 4px 0 0 0 var(--ink);
+  border-color: rgba(244, 237, 214, 0.35);
+  border-left-color: var(--accent);
   padding-left: 20px;
 }
 .services-index li.active .title {
@@ -1067,7 +1074,7 @@ main { position: relative; z-index: 1; }
 }
 .cases-v2-chapter {
   position: absolute;
-  top: calc(var(--topbar-h) + 32px);
+  top: calc(var(--chrome-h) + 20px);
   left: calc(var(--frame) + 56px);
   z-index: 4;
 }
@@ -1614,7 +1621,7 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
      collapsing it to 0 and the absolute-positioned cards were rendering
      on top of the disciplines list). */
   .services {
-    height: 900vh;
+    height: 500vh;
   }
   .services-sticky {
     display: flex;
@@ -1622,7 +1629,7 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
     grid-template-columns: none;
     grid-template-rows: none;
     height: 100vh;
-    padding: 56px 20px 16px;
+    padding: 104px 20px 10px;
     gap: 0;
   }
   .services-left {
@@ -1642,31 +1649,33 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
   .service-card {
     padding-top: 0;
     overflow: hidden;
+    justify-content: flex-start;
   }
   .service-card h3 {
     font-size: clamp(26px, 7vw, 42px);
     max-width: none;
-    margin-bottom: 14px;
+    margin-bottom: 10px;
     line-height: 1.02;
   }
   .service-card p {
     font-size: 13.5px;
     line-height: 1.55;
-    margin-bottom: 18px;
+    margin-bottom: 16px;
     max-width: none;
   }
   .service-card .bullets {
     grid-template-columns: 1fr;
-    font-size: 10px;
-    gap: 4px;
+    font-size: 9.5px;
+    gap: 2px;
     max-width: none;
   }
-  .service-card-num { margin-bottom: 10px; }
+  .service-card-num { margin-bottom: 6px; }
 
-  /* Disciplines pinned to the bottom of the viewport, compact + scrollable */
+  /* Disciplines hidden on mobile — card takes full height */
   .services-right {
+    display: none;
     flex: 0 0 auto;
-    max-height: 30vh;
+    max-height: 24vh;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     border-left: 0;
@@ -1702,33 +1711,49 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
 
   /* CASES — stack lead + meta */
   .cases-v2 { height: 600vh; }
-  .cases-v2-sticky { padding: 80px 20px 48px; }
-  .cases-v2-chapter { margin-bottom: 24px; }
+  .cases-v2-sticky { padding: 0; }
+  .cases-v2-chapter {
+    top: calc(var(--topbar-h) + 12px);
+    left: 20px;
+  }
+  .case-card-v2 {
+    padding: calc(var(--topbar-h) + 48px) 20px 20px;
+    align-items: flex-start;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
   .case-grid {
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: 20px;
     align-items: stretch;
   }
   .case-bignum { display: none; }
-  .case-lead { padding-right: 0; }
-  .case-leadnum-v { font-size: clamp(48px, 18vw, 96px); }
-  .case-leadnum-unit { font-size: 13px; }
-  .case-title { font-size: clamp(22px, 5.5vw, 38px); max-width: none; }
+  .case-lead {
+    padding-right: 0;
+    border-right: none;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 20px;
+    gap: 10px;
+  }
+  .case-leadnum-v { font-size: clamp(44px, 16vw, 80px); }
+  .case-leadnum-unit { font-size: 12px; }
+  .case-meta { gap: 18px; }
+  .case-title { font-size: clamp(20px, 5.5vw, 34px); max-width: none; }
   .case-substats {
     grid-template-columns: 1fr 1fr;
-    gap: 16px 18px;
+    gap: 12px 16px;
+    padding: 16px 0;
   }
-  .case-substat-v { font-size: clamp(22px, 5vw, 32px); }
+  .case-substat-v { font-size: clamp(20px, 5vw, 28px); }
+  .case-substat-l { font-size: 9px; margin-top: 6px; }
   .case-row {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 10px;
   }
   .case-row-v { font-size: 13px; }
-  .case-stack {
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  .case-stack-chip { font-size: 10px; padding: 6px 10px; }
+  .case-stack { flex-wrap: wrap; gap: 6px; }
+  .case-stack-chip { font-size: 10px; padding: 5px 10px; }
+  .cases-v2-progress { left: 20px; right: 20px; bottom: 12px; }
 
   /* TECH FLYBY — keep horizontal scrub, just tighten cluster widths */
   .tech { height: 500vh; }
@@ -1807,14 +1832,14 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
   .hero-panel .hero-headline { font-size: clamp(30px, 9.5vw, 48px); }
   .hero-panel .hero-lead { font-size: 13px; }
 
-  .services-sticky { padding: 64px 18px 48px; }
+  .services-sticky { padding: 104px 18px 10px; }
   .service-card h3 { font-size: clamp(26px, 8vw, 38px); }
-  .services-right { max-height: 28vh; }
 
-  .cases-v2-sticky { padding: 64px 18px 40px; }
-  .case-leadnum-v { font-size: clamp(40px, 20vw, 80px); }
-  .case-title { font-size: clamp(20px, 6vw, 32px); }
-  .case-substats { grid-template-columns: 1fr; }
+  .case-card-v2 { padding: calc(var(--topbar-h) + 40px) 18px 16px; }
+  .case-leadnum-v { font-size: clamp(40px, 16vw, 72px); }
+  .case-title { font-size: clamp(18px, 6vw, 28px); }
+  .case-substats { grid-template-columns: 1fr 1fr; padding: 12px 0; }
+  .case-stack { display: none; }
 
   .tech-chapter { padding-left: 18px; }
   .tech-track { padding: 0 18px; gap: 36px; }
