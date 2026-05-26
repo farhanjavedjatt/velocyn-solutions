@@ -156,15 +156,16 @@ async function loadWebpFrames(base, total, onProgress, isMobile) {
     }
   };
 
-  /* Fire frame requests immediately. Desktop eagers a big batch
-     (~256 frames) so slow scroll has decoded frames ready. Mobile cuts
-     this in half — touch users typically swipe past the hero quickly
-     and the data + memory savings are real on cellular. */
+  /* Fire all frame requests immediately. Await the first frame quickly
+     so the canvas can init, then await everything else so we don't hide
+     the loading screen until all 768 frames are truly in memory. */
   const eagerEnd = Math.min(total, isMobile ? 96 : 256);
   const eager = [];
   for (let i = 0; i < eagerEnd; i++) eager.push(loadOne(i));
   await Promise.race([eager[0], new Promise((r) => setTimeout(r, 5000))]);
-  for (let i = eagerEnd; i < total; i++) loadOne(i);
+  const rest = [];
+  for (let i = eagerEnd; i < total; i++) rest.push(loadOne(i));
+  await Promise.all([...eager, ...rest]);
   return bmps;
 }
 
@@ -179,7 +180,30 @@ export default function SiteScrub({
   const canvasRef = useRef(null);
   const framesRef = useRef({ list: [], count: 0, isVideoFrame: false });
   const stateRef = useRef({ frame: 0 });
-  const [posterVisible, setPosterVisible] = useState(true);
+  const [loadingVisible, setLoadingVisible] = useState(true);
+  const [canvasReady, setCanvasReady] = useState(false);
+
+  const loadingVideoRef = useRef(null);
+  const loadingVideoCallbackRef = (node) => {
+    loadingVideoRef.current = node;
+    if (!node) return;
+    node.loop = true;
+    node.play().catch(() => {});
+    const restart = () => { node.currentTime = 0; node.play().catch(() => {}); };
+    node.addEventListener("ended", restart);
+  };
+
+  /* Lock scroll while loading video is shown */
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
+  useEffect(() => {
+    if (!loadingVisible) {
+      document.body.style.overflow = "";
+    }
+  }, [loadingVisible]);
 
   useEffect(() => {
     const reduce =
@@ -277,13 +301,15 @@ export default function SiteScrub({
          bitmaps. WebCodecs path is kept for future use but disabled
          here while the WebP density is the priority. */
       const base = useMobile ? srcBaseSm : srcBase;
+      const minDelay = new Promise((r) => setTimeout(r, 6000));
       const bmps = await loadWebpFrames(base, webpTotal, () => {
         if (cancelled) return;
+        /* Init canvas on first frame so it's ready when loading finishes */
         if (framesRef.current.count === 0) {
           framesRef.current = { list: bmps, count: webpTotal, isVideoFrame: false };
           fitCanvas();
           drawFrame(0);
-          setPosterVisible(false);
+          setCanvasReady(true);
         }
       }, useMobile);
       if (cancelled) {
@@ -293,7 +319,10 @@ export default function SiteScrub({
       framesRef.current = { list: bmps, count: webpTotal, isVideoFrame: false };
       fitCanvas();
       drawFrame(0);
-      setPosterVisible(false);
+      setCanvasReady(true);
+      /* Wait for both frames loaded AND minimum 6s before hiding */
+      await minDelay;
+      if (!cancelled) setLoadingVisible(false);
 
       if (reduce) {
         drawFrame(Math.floor(webpTotal * 0.55));
@@ -315,17 +344,26 @@ export default function SiteScrub({
   }, [webpTotal, srcBase, srcBaseSm, sourceMp4]);
 
   return (
-    <div ref={wrapRef} className="site-scrub" aria-hidden="true">
-      {posterVisible && (
-        <img
-          src={poster}
-          alt=""
-          aria-hidden="true"
-          className="site-scrub-poster"
-          fetchPriority="high"
-        />
+    <>
+      {loadingVisible && (
+        <div className="site-loading-overlay" aria-hidden="true">
+          <video
+            ref={loadingVideoCallbackRef}
+            src="/loading.mp4"
+            autoPlay
+            muted
+            playsInline
+            className="site-loading-video"
+          />
+        </div>
       )}
-      <canvas ref={canvasRef} className="site-scrub-canvas" aria-hidden="true" />
-    </div>
+      <div ref={wrapRef} className="site-scrub" aria-hidden="true">
+        <canvas
+          ref={canvasRef}
+          className={"site-scrub-canvas" + (canvasReady ? " is-ready" : "")}
+          aria-hidden="true"
+        />
+      </div>
+    </>
   );
 }
