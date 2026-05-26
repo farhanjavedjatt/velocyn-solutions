@@ -182,16 +182,15 @@ export default function SiteScrub({
   const stateRef = useRef({ frame: 0 });
   const [loadingVisible, setLoadingVisible] = useState(true);
   const [canvasReady, setCanvasReady] = useState(false);
-
   const loadingVideoRef = useRef(null);
-  const loadingVideoCallbackRef = (node) => {
-    loadingVideoRef.current = node;
-    if (!node) return;
-    node.loop = true;
-    node.play().catch(() => {});
-    const restart = () => { node.currentTime = 0; node.play().catch(() => {}); };
-    node.addEventListener("ended", restart);
-  };
+
+  useEffect(() => {
+    const v = loadingVideoRef.current;
+    if (!v) return;
+    const restart = () => { v.currentTime = 0; v.play().catch(() => {}); };
+    v.addEventListener("ended", restart);
+    return () => v.removeEventListener("ended", restart);
+  }, [loadingVisible]);
 
   /* Lock scroll while loading video is shown */
   useEffect(() => {
@@ -348,7 +347,7 @@ export default function SiteScrub({
       {loadingVisible && (
         <div className="site-loading-overlay" aria-hidden="true">
           <video
-            ref={loadingVideoCallbackRef}
+            ref={loadingVideoRef}
             src="/loading.mp4"
             autoPlay
             muted
