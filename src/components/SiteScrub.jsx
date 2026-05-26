@@ -192,35 +192,29 @@ export default function SiteScrub({
     return () => v.removeEventListener("ended", restart);
   }, [loadingVisible]);
 
-  /* Lock scroll while loading video is shown */
+  /* Lock scroll while loading, unlock as soon as loading is done */
   useEffect(() => {
-    const lock = () => {
-      document.documentElement.style.overflow = "hidden";
-      document.body.style.overflow = "hidden";
-    };
-    const unlock = () => {
-      document.documentElement.style.overflow = "";
-      document.body.style.overflow = "";
-    };
     const blockWheel = (e) => e.preventDefault();
     const blockTouch = (e) => e.preventDefault();
 
-    lock();
-    window.addEventListener("wheel", blockWheel, { passive: false });
-    window.addEventListener("touchmove", blockTouch, { passive: false });
+    if (loadingVisible) {
+      document.documentElement.style.overflow = "hidden";
+      document.body.style.overflow = "hidden";
+      window.addEventListener("wheel", blockWheel, { passive: false });
+      window.addEventListener("touchmove", blockTouch, { passive: false });
+    } else {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+      window.removeEventListener("wheel", blockWheel);
+      window.removeEventListener("touchmove", blockTouch);
+    }
 
     return () => {
-      unlock();
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
       window.removeEventListener("wheel", blockWheel);
       window.removeEventListener("touchmove", blockTouch);
     };
-  }, []);
-
-  useEffect(() => {
-    if (!loadingVisible) {
-      document.documentElement.style.overflow = "";
-      document.body.style.overflow = "";
-    }
   }, [loadingVisible]);
 
   useEffect(() => {
