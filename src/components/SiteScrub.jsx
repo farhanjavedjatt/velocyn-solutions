@@ -130,9 +130,20 @@ async function decodeMp4ToFrames(url) {
   });
 }
 
-/* FALLBACK: preload WebP frame sequence into ImageBitmaps. */
+/* FALLBACK: preload WebP frame sequence into ImageBitmaps.
+   On mobile we load every other frame (384 instead of 768) — the
+   difference is invisible on small screens but halves server load.
+   Requests are throttled to CONCURRENCY at a time to avoid flooding
+   the server when multiple users visit simultaneously. */
 async function loadWebpFrames(base, total, onProgress, isMobile) {
   const pad = String(total).length < 4 ? 4 : String(total).length;
+
+  /* Mobile: sample every other frame to halve requests + memory. */
+  const indices = [];
+  const step = isMobile ? 2 : 1;
+  for (let i = 0; i < total; i += step) indices.push(i);
+  const count = indices.length;
+
   const bmps = new Array(total);
   const supportsBitmap = typeof createImageBitmap === "function";
 
@@ -156,17 +167,37 @@ async function loadWebpFrames(base, total, onProgress, isMobile) {
     }
   };
 
-  /* Fire all frame requests immediately. Await the first frame quickly
-     so the canvas can init. Then wait for all frames OR 10s max —
-     whichever comes first — so first-time visitors aren't stuck forever. */
-  const eagerEnd = Math.min(total, isMobile ? 96 : 256);
-  const eager = [];
-  for (let i = 0; i < eagerEnd; i++) eager.push(loadOne(i));
-  await Promise.race([eager[0], new Promise((r) => setTimeout(r, 5000))]);
-  const rest = [];
-  for (let i = eagerEnd; i < total; i++) rest.push(loadOne(i));
+  /* Throttle to max CONCURRENCY simultaneous requests to protect server. */
+  const CONCURRENCY = isMobile ? 8 : 16;
+  const queue = [...indices];
+  let firstFrameResolve;
+  const firstFrame = new Promise((r) => { firstFrameResolve = r; });
+  let firstDone = false;
+
+  const worker = async () => {
+    while (queue.length) {
+      const i = queue.shift();
+      await loadOne(i);
+      if (!firstDone) { firstDone = true; firstFrameResolve(); }
+    }
+  };
+
+  const workers = Array.from({ length: CONCURRENCY }, worker);
   const maxWait = new Promise((r) => setTimeout(r, 10000));
-  await Promise.race([Promise.all([...eager, ...rest]), maxWait]);
+
+  /* Unblock canvas init as soon as first frame arrives. */
+  await Promise.race([firstFrame, new Promise((r) => setTimeout(r, 5000))]);
+
+  /* Wait for all frames OR 10s cap — whichever comes first. */
+  await Promise.race([Promise.all(workers), maxWait]);
+
+  /* Fill gaps on mobile (missing odd frames) by copying nearest neighbour. */
+  if (isMobile) {
+    for (let i = 0; i < total; i++) {
+      if (!bmps[i] && bmps[i - 1]) bmps[i] = bmps[i - 1];
+    }
+  }
+
   return bmps;
 }
 
@@ -320,9 +351,8 @@ export default function SiteScrub({
       const minDelay = new Promise((r) => setTimeout(r, 4000));
       const bmps = await loadWebpFrames(base, webpTotal, () => {
         if (cancelled) return;
-        /* Init canvas on first frame so it's ready when loading finishes */
         if (framesRef.current.count === 0) {
-          framesRef.current = { list: bmps, count: webpTotal, isVideoFrame: false };
+          framesRef.current = { list: bmps, count: bmps.length, isVideoFrame: false };
           fitCanvas();
           drawFrame(0);
           setCanvasReady(true);
@@ -332,7 +362,7 @@ export default function SiteScrub({
         bmps.forEach((b) => b && b.close && b.close());
         return;
       }
-      framesRef.current = { list: bmps, count: webpTotal, isVideoFrame: false };
+      framesRef.current = { list: bmps, count: bmps.length, isVideoFrame: false };
       fitCanvas();
       drawFrame(0);
       setCanvasReady(true);
@@ -363,14 +393,16 @@ export default function SiteScrub({
     <>
       {loadingVisible && (
         <div className="site-loading-overlay" aria-hidden="true">
-          <video
-            ref={loadingVideoRef}
-            src="/loading.mp4"
-            autoPlay
-            muted
-            playsInline
-            className="site-loading-video"
-          />
+          <div className="site-loading-video-wrap">
+            <video
+              ref={loadingVideoRef}
+              src="/loading.mp4"
+              autoPlay
+              muted
+              playsInline
+              className="site-loading-video"
+            />
+          </div>
         </div>
       )}
       <div ref={wrapRef} className="site-scrub" aria-hidden="true">
