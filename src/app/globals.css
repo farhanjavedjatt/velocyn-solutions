@@ -183,6 +183,7 @@ a { color: inherit; text-decoration: none; }
   position: absolute;
   inset: var(--frame);
   border: 1px solid var(--rule);
+  border-top: none;
   pointer-events: none;
 }
 .page-frame::after {
