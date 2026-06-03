@@ -1689,21 +1689,21 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
     justify-content: flex-start;
   }
   .service-card h3 {
-    font-size: clamp(26px, 7vw, 42px);
+    font-size: clamp(30px, 8.5vw, 48px);
     max-width: none;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
     line-height: 1.02;
   }
   .service-card p {
-    font-size: 13.5px;
-    line-height: 1.55;
-    margin-bottom: 16px;
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: 18px;
     max-width: none;
   }
   .service-card .bullets {
     grid-template-columns: 1fr;
-    font-size: 10.5px;
-    gap: 5px;
+    font-size: 12px;
+    gap: 7px;
     max-width: none;
   }
   .service-card-num { margin-bottom: 10px; }
@@ -1775,23 +1775,23 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
     padding-bottom: 20px;
     gap: 12px;
   }
-  .case-leadnum-v { font-size: clamp(44px, 16vw, 80px); }
-  .case-leadnum-unit { font-size: 13px; letter-spacing: 0.06em; }
-  .case-meta { gap: 20px; }
-  .case-title { font-size: clamp(20px, 5.5vw, 34px); max-width: none; }
+  .case-leadnum-v { font-size: clamp(56px, 18vw, 96px); }
+  .case-leadnum-unit { font-size: 14px; letter-spacing: 0.06em; }
+  .case-meta { gap: 22px; }
+  .case-title { font-size: clamp(22px, 6.5vw, 38px); max-width: none; }
   .case-substats {
     grid-template-columns: 1fr 1fr;
-    gap: 14px 16px;
-    padding: 16px 0;
+    gap: 16px 20px;
+    padding: 18px 0;
   }
-  .case-substat-v { font-size: clamp(20px, 5vw, 28px); }
-  .case-substat-l { font-size: 10.5px; margin-top: 6px; }
+  .case-substat-v { font-size: clamp(24px, 6vw, 34px); }
+  .case-substat-l { font-size: 12px; margin-top: 6px; }
   .case-row {
     grid-template-columns: 1fr;
     gap: 12px;
   }
-  .case-row-l { font-size: 10px; }
-  .case-row-v { font-size: 13.5px; }
+  .case-row-l { font-size: 11px; }
+  .case-row-v { font-size: 15px; }
   .case-stack { flex-wrap: wrap; gap: 6px; }
   .case-stack-chip { font-size: 10px; padding: 5px 10px; }
   .cases-v2-progress { left: 20px; right: 20px; bottom: 12px; }
