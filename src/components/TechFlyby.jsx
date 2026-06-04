@@ -81,8 +81,12 @@ export default function TechFlyby() {
   const progress = useSectionProgress(sectionRef);
   const vp = useViewport();
 
+  /* Horizontal flyby is a desktop-only device. At/below the 900px
+     breakpoint the section verticalizes (see globals.css), so we leave the
+     track untranslated — a horizontal scroll-jack on a phone clips content
+     and reads as broken. */
   let translate = 0;
-  if (trackRef.current) {
+  if (vp.w > 900 && trackRef.current) {
     const trackW = trackRef.current.scrollWidth;
     const max = Math.max(0, trackW - vp.w);
     translate = -progress * max;

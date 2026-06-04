@@ -297,20 +297,34 @@ export default function SiteScrub({
       const ch = canvas.height;
       const iw = a.codedWidth || a.displayWidth || a.width;
       const ih = a.codedHeight || a.displayHeight || a.height;
-      const scale = Math.max(cw / iw, ch / ih);
-      const dw = iw * scale;
-      const dh = ih * scale;
+
+      /* The rendered source frames carry thin baked-in black letterbox
+         bars (~1% top and bottom of every frame). Left untouched, the
+         cover-fit below reveals them as an empty black border along the
+         top/bottom edge of the hero on most viewport ratios. We crop them
+         off by sampling from an inset source rectangle (drop ~2% top and
+         bottom — comfortably past the ~1% bar) so the canvas only ever
+         draws clean content. The minuscule zoom this introduces is
+         invisible. */
+      const bar = Math.round(ih * 0.02);
+      const sx = 0;
+      const sy = bar;
+      const sw = iw;
+      const sh = ih - bar * 2;
+      const scale = Math.max(cw / sw, ch / sh);
+      const dw = sw * scale;
+      const dh = sh * scale;
       const dx = (cw - dw) / 2;
       const dy = (ch - dh) / 2;
 
       ctx.clearRect(0, 0, cw, ch);
       ctx.globalAlpha = 1;
-      ctx.drawImage(a, dx, dy, dw, dh);
+      ctx.drawImage(a, sx, sy, sw, sh, dx, dy, dw, dh);
       if (f > 0.001 && hi !== lo) {
         const b = list[hi];
         if (b) {
           ctx.globalAlpha = f;
-          ctx.drawImage(b, dx, dy, dw, dh);
+          ctx.drawImage(b, sx, sy, sw, sh, dx, dy, dw, dh);
           ctx.globalAlpha = 1;
         }
       }

@@ -333,6 +333,11 @@ main { position: relative; width: 100%; max-width: 100%; overflow-x: clip; }
   overflow-x: clip;
 }
 
+/* Anchored nav jumps (#services / #work / #stack / #contact) must land
+   below the fixed top bar — otherwise the section's first line (eyebrow,
+   headline, or form label) parks underneath the bar. */
+.scene[id] { scroll-margin-top: var(--chrome-h); }
+
 /* mono label component */
 .mono-label {
   font-family: var(--mono);
@@ -420,6 +425,13 @@ main { position: relative; width: 100%; max-width: 100%; overflow-x: clip; }
   will-change: transform;
   transform: translateZ(0);
   backface-visibility: hidden;
+  /* The rendered scrub frames bake in a slightly muted cream (#DFD7C3)
+     that sits ~10% darker than the page's brand cream (#F5EDDB). Without
+     correction the hero canvas reads visibly duller than the surrounding
+     paper and than the (bright-cream) loading animation, so the hand-off
+     darkens. A flat +10% brightness lifts the canvas cream onto the brand
+     cream while keeping the navy strokes deep. */
+  filter: brightness(1.1);
 }
 .site-scrub-canvas.is-ready {
   opacity: 1;
@@ -437,11 +449,27 @@ body[data-loading] .chrome .nav-cta { visibility: hidden; pointer-events: none; 
   justify-content: center;
   overflow: hidden;
 }
+/* Carry the same paper wash as the live page so the loading screen and the
+   site read as one continuous cream surface — no visible seam on hand-off. */
+.site-loading-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 90% at 50% -10%, rgba(var(--ink-rgb), 0.04) 0%, transparent 55%),
+    radial-gradient(80% 60% at 80% 110%, rgba(var(--ink-rgb), 0.05) 0%, transparent 55%);
+}
 .site-loading-video-wrap {
-  width: min(640px, 90vw);
-  aspect-ratio: 2.5;
+  position: relative;
+  width: min(680px, 88vw);
+  /* A ratio wider than the video's content (~1.9:1) makes object-fit:cover
+     crop away the clip's baked-in cinematic letterbox bars AND trim the
+     empty cream margin above/below the wordmark so the mark fills the
+     frame. The clip's cream matches the overlay, so the cropped edges are
+     invisible — the logo appears to animate directly on the paper. */
+  aspect-ratio: 2.35;
   overflow: hidden;
-  border-radius: 12px;
   flex-shrink: 0;
 }
 .site-loading-video {
@@ -451,15 +479,8 @@ body[data-loading] .chrome .nav-cta { visibility: hidden; pointer-events: none; 
   object-position: center;
   display: block;
 }
-@media (max-width: 900px) {
-  .site-loading-video-wrap {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    aspect-ratio: unset;
-    border-radius: 0;
-  }
+@media (max-width: 640px) {
+  .site-loading-video-wrap { width: 92vw; aspect-ratio: 2.0; }
 }
 /* Hero-scoped scrub: scrub plays inside the hero only. Sections below
    the hero return to their normal solid cream backgrounds — no washes,
@@ -969,11 +990,15 @@ main { position: relative; z-index: 1; }
 }
 .service-card .bullets li {
   padding: 4px 0;
+  display: flex;
+  gap: 8px;
 }
+/* Fixed-width arrow marker so a bullet that wraps to two lines hang-indents
+   under the text rather than under the arrow. */
 .service-card .bullets li::before {
-  content: "→ ";
+  content: "→";
   color: var(--ink);
-  margin-right: 6px;
+  flex: none;
 }
 
 .services-right {
@@ -1210,6 +1235,9 @@ main { position: relative; z-index: 1; }
   color: var(--ink-dim);
   line-height: 1.5;
   max-width: 24ch;
+  /* Reserve equal vertical space so the three stat captions share a
+     baseline regardless of how many lines each wraps to. */
+  min-height: 3em;
 }
 .case-row {
   display: grid;
@@ -1380,6 +1408,7 @@ main { position: relative; z-index: 1; }
   color: var(--ink);
   padding: 6px 0;
   font-weight: 450;
+  overflow-wrap: anywhere;
 }
 .cta-footer-col li a:hover { color: var(--ink-strong); }
 .cta-footer-brand-mark {
@@ -1569,6 +1598,19 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
   /* Reduce hover-driven motion since touch users tap, not hover */
   .case-stack-chip:hover,
   .tech-item:hover { transform: none; }
+
+  /* Comfortable tap targets (>=44px) for the nav links that remain visible
+     on touch tablets and for the stacked footer links. */
+  .chrome .nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .cta-footer-col li a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
 }
 
 /* ============== TABLET + MOBILE (≤ 900px) ============================= */
@@ -1754,7 +1796,7 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
     left: 20px;
   }
   .case-card-v2 {
-    padding: calc(var(--topbar-h) + 60px) 20px 20px;
+    padding: calc(var(--topbar-h) + 60px) 20px 76px;
     align-items: flex-start;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -1796,19 +1838,59 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
   .case-stack-chip { font-size: 10px; padding: 5px 10px; }
   .cases-v2-progress { left: 20px; right: 20px; bottom: 12px; }
 
-  /* TECH FLYBY — keep horizontal scrub, just tighten cluster widths */
-  .tech { height: 500vh; }
-  .tech-sticky { padding: 80px 0 48px; }
-  .tech-chapter { padding-left: 20px; margin-bottom: 32px; }
-  .tech-track { gap: 48px; padding: 0 20px; }
-  .tech-intro {
-    padding-top: calc(var(--topbar-h) + 24px);
-    justify-content: flex-start;
-    width: min(100vw - 40px, 480px);
+  /* TECH / STACK — verticalize. The desktop horizontal flyby is a
+     scroll-jacked pinned reel; on touch it clips content on both edges and
+     fights the inline transform. Below 900px we unpin the section and lay
+     the intro + four clusters + outro out as a normal single-column stack. */
+  .tech { height: auto; overflow: hidden; border-top: 1px solid var(--rule); }
+  .tech-sticky {
+    position: static;
+    height: auto;
+    overflow: visible;
+    display: block;
+    padding: calc(var(--topbar-h) + 24px) 20px 56px;
   }
-  .tech-intro h2 { font-size: clamp(36px, 10vw, 56px); }
-  .tech-intro p { font-size: 15.5px; max-width: 36ch; margin-top: 20px; }
-  .tech-cluster { min-width: 280px; }
+  .tech-chapter {
+    position: static;
+    padding-left: 0;
+    margin-bottom: 28px;
+  }
+  .tech-track {
+    transform: none !important;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
+    width: 100%;
+    will-change: auto;
+  }
+  .tech-intro {
+    width: 100%;
+    max-width: 600px;
+    padding: 0 0 4px;
+    justify-content: flex-start;
+  }
+  .tech-intro h2 { font-size: clamp(30px, 8.5vw, 52px); line-height: 1.08; }
+  .tech-intro p {
+    font-size: 15.5px;
+    max-width: 48ch;
+    margin-top: 18px;
+    color: rgba(244, 237, 214, 0.72);
+  }
+  .tech-cluster,
+  .tech-end {
+    width: 100%;
+    max-width: 600px;
+    min-width: 0;
+    border-left: 0;
+    border-top: 1px solid var(--rule);
+    margin-top: 40px;
+    padding: 40px 0 0;
+    justify-content: flex-start;
+  }
+  .tech-item { gap: 16px; }
   .tech-item-name { font-size: 18px; }
   .tech-item-ver { font-size: 10px; }
   .tech-end h3 { font-size: clamp(24px, 6vw, 40px); }
@@ -1881,17 +1963,15 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
   .services-sticky { padding: 104px 18px 10px; }
   .service-card h3 { font-size: clamp(26px, 8vw, 38px); }
 
-  .case-card-v2 { padding: calc(var(--topbar-h) + 56px) 18px 16px; }
+  .case-card-v2 { padding: calc(var(--topbar-h) + 56px) 18px 72px; }
   .case-leadnum-v { font-size: clamp(40px, 16vw, 72px); }
   .case-title { font-size: clamp(18px, 6vw, 28px); }
   .case-substats { grid-template-columns: 1fr 1fr; padding: 12px 0; }
   .case-stack { display: none; }
 
-  .tech-chapter { padding-left: 18px; }
-  .tech-track { padding: 0 18px; gap: 36px; }
-  .tech-intro h2 { font-size: clamp(34px, 10vw, 52px); }
+  .tech-sticky { padding-left: 18px; padding-right: 18px; }
+  .tech-intro h2 { font-size: clamp(28px, 9vw, 46px); }
   .tech-intro p { font-size: 15px; }
-  .tech-cluster { min-width: 240px; }
 
   .cta { padding: 64px 18px 48px; }
   .cta .cta-headline { font-size: clamp(32px, 10vw, 52px); }
