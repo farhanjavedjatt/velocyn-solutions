@@ -12,7 +12,7 @@
    CTA) continues as before.
    ========================================================================= */
 import { useRef, Fragment } from "react";
-import { useSectionProgress } from "@/lib/hooks";
+import { useSectionProgress, useScrollY } from "@/lib/hooks";
 import SiteScrub from "./SiteScrub";
 
 const HERO_SCRUB_FRAMES = 768;
@@ -70,7 +70,9 @@ function panelOpacity(progress, index, total) {
      be a blank screen on initial paint, since the user lands at scroll
      position 0 where the fade-in would have just started). */
   const span = 1 / total;
-  const fade = span * 0.4; // crossfade zone width
+  /* Narrow crossfade zone — panels swap almost instantly instead of
+     lingering half-faded on top of each other. */
+  const fade = span * 0.12;
   const start = index * span;
   const end = (index + 1) * span;
 
@@ -122,6 +124,10 @@ function HeroPanel({ panel, index, total, progress, mounted }) {
 export default function Hero() {
   const sectionRef = useRef(null);
   const progress = useSectionProgress(sectionRef);
+  /* The scroll cue only invites — once the visitor starts scrolling it
+     fades away and stays away until they return to the very top. */
+  const scrollY = useScrollY();
+  const cueHidden = scrollY > 24;
 
   return (
     <section
@@ -136,7 +142,8 @@ export default function Hero() {
           srcBase="/scrub/desktop"
           srcBaseSm="/scrub/mobile"
           poster="/scrub/poster.webp"
-          sourceMp4="/scrub/source.mp4"
+          sourceMp4="/scrub/source-desktop.mp4"
+          sourceMp4Sm="/scrub/source-mobile.mp4"
         />
         <div className="hero-panels">
           {PANELS.map((p, i) => (
@@ -150,8 +157,12 @@ export default function Hero() {
             />
           ))}
         </div>
-        <div className="hero-scroll-cue" aria-hidden="true">
-          <span className="bar"></span>
+        <div
+          className={"hero-scroll-cue" + (cueHidden ? " is-hidden" : "")}
+          aria-hidden="true"
+        >
+          <span className="cue-label">Scroll to explore</span>
+          <span className="cue-arrow">↓</span>
         </div>
       </div>
     </section>

@@ -82,4 +82,6 @@ export function ProgressLine({ progress, onDark }) {
 }
 
 export function Grain() { return null; }
-export function Frame() { return <div className="page-frame" aria-hidden="true"></div>; }
+/* Page frame (the thin box outline around the viewport) — removed per
+   design feedback; it competed with the content. */
+export function Frame() { return null; }

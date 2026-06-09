@@ -2,7 +2,7 @@
 /* =========================================================================
    STACK (Chapter 04) — pinned, horizontal-travel reel.
    ========================================================================= */
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useSectionProgress, useViewport } from "@/lib/hooks";
 
 const TECH_CLUSTERS = [
@@ -80,6 +80,38 @@ export default function TechFlyby() {
   const trackRef = useRef(null);
   const progress = useSectionProgress(sectionRef);
   const vp = useViewport();
+
+  /* Keep the SELECTION CRITERIA label level with the PRACTICE labels.
+     Both columns vertically center their content, so the shorter end
+     column's label sits lower by half the content-height difference.
+     Measure that drift and feed it to the .tech-end::after spacer
+     (--tech-end-pad) so the two centered blocks share the same top line
+     at every viewport size. Re-runs on resize and after fonts load,
+     since fluid type changes the wrap count. */
+  useEffect(() => {
+    const sec = sectionRef.current;
+    if (!sec) return;
+    const align = () => {
+      if (window.innerWidth <= 900) {
+        sec.style.removeProperty("--tech-end-pad");
+        return;
+      }
+      const clusterLabel = sec.querySelector(".tech-cluster .mono-label");
+      const endLabel = sec.querySelector(".tech-end .mono-label");
+      if (!clusterLabel || !endLabel) return;
+      sec.style.setProperty("--tech-end-pad", "0px");
+      const delta =
+        endLabel.getBoundingClientRect().top -
+        clusterLabel.getBoundingClientRect().top;
+      sec.style.setProperty("--tech-end-pad", `${Math.max(0, delta * 2)}px`);
+    };
+    align();
+    window.addEventListener("resize", align);
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(align).catch(() => {});
+    }
+    return () => window.removeEventListener("resize", align);
+  }, []);
 
   /* Horizontal flyby is a desktop-only device. At/below the 900px
      breakpoint the section verticalizes (see globals.css), so we leave the

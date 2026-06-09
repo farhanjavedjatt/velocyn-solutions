@@ -4,19 +4,22 @@
    lockstep with scroll.
 
    PRIMARY PATH: WebCodecs.
-     - Fetches the original source.mp4 (the exact MP4 you've been viewing).
+     - Fetches a single MP4 encoded from the RIFE-interpolated 96 fps
+       frame ladder (source-desktop.mp4 / source-mobile.mp4) — same
+       frames as the old WebP sequence, one request instead of 768.
      - MP4Box.js demuxes the H.264 stream into per-frame chunks.
-     - The platform's hardware VideoDecoder turns each chunk into a
-       GPU-resident VideoFrame.
-     - drawImage(videoFrame) is a near-zero-cost GPU blit.
+     - The platform's hardware VideoDecoder decodes each chunk; every
+       VideoFrame is copied to an ImageBitmap and closed immediately
+       (decoder output pools are tiny — holding frames stalls decode).
      - Crossfade between adjacent frames synthesizes infinite intermediate
        states for silky slow-scroll smoothness.
 
-   FALLBACK PATH: preloaded WebP frame sequence (older Safari / Firefox).
-     - Same crossfade logic, but on ImageBitmaps instead of VideoFrames.
+   FALLBACK PATH: preloaded WebP frame sequence (older Safari / Firefox
+   without VideoDecoder, or on any decode failure).
+     - Same crossfade logic, but loading frame-by-frame over HTTP.
 
    The canvas pipeline doesn't care which source it's drawing — both
-   paths feed `framesRef.current` and `framesRef.count`.
+   paths fill an ImageBitmap[] and hand it to `framesRef.current`.
    ========================================================================= */
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
@@ -45,39 +48,55 @@ function getCodecDescription(file, track) {
   return undefined;
 }
 
-/* PRIMARY: decode the entire source MP4 into an in-memory VideoFrame[]
-   using WebCodecs + MP4Box.js. Returns { frames, width, height } or
-   throws on failure. */
-async function decodeMp4ToFrames(url) {
+/* PRIMARY: decode a single MP4 into an ImageBitmap[] via WebCodecs +
+   MP4Box.js. Each decoded VideoFrame is copied to an ImageBitmap and
+   closed right away — VideoDecoder recycles a small pool of GPU frames
+   and stalls if outputs are retained. The asset is encoded without
+   B-frames, so output arrives in presentation order and `onFrame`
+   fires with ascending indices — the canvas can draw mid-decode.
+   Returns the (possibly still-filling) bitmap array; throws on any
+   setup/decode failure so the caller can fall back to WebP frames. */
+async function decodeMp4ToBitmaps(url, onFrame) {
   if (typeof VideoDecoder === "undefined") {
     throw new Error("WebCodecs not available");
   }
   const res = await fetch(url);
-  if (!res.ok) throw new Error("source mp4 fetch failed");
+  if (!res.ok) throw new Error("source mp4 fetch failed: " + res.status);
   const buffer = await res.arrayBuffer();
   buffer.fileStart = 0;
 
   const file = createFile();
-  const frames = [];
-  let width = 0;
-  let height = 0;
-  let track = null;
 
   return new Promise((resolve, reject) => {
     let decoder = null;
     let decodeError = null;
+    let track = null;
+    let bmps = null;
+    let samplesFed = 0;
+    let outIndex = 0;
+    const pendingCopies = [];
 
     file.onError = (e) => reject(new Error("mp4box: " + e));
 
     file.onReady = (info) => {
       track = info.videoTracks[0];
       if (!track) return reject(new Error("no video track"));
-      width = track.video.width;
-      height = track.video.height;
+      bmps = new Array(track.nb_samples);
 
       decoder = new VideoDecoder({
         output: (frame) => {
-          frames.push(frame);
+          const i = outIndex++;
+          pendingCopies.push(
+            createImageBitmap(frame)
+              .then((bmp) => {
+                bmps[i] = bmp;
+                if (onFrame) onFrame(i, bmps);
+              })
+              .catch((e) => {
+                decodeError = decodeError || e;
+              })
+              .finally(() => frame.close())
+          );
         },
         error: (e) => {
           decodeError = e;
@@ -87,8 +106,8 @@ async function decodeMp4ToFrames(url) {
       const description = getCodecDescription(file, track);
       decoder.configure({
         codec: track.codec,
-        codedWidth: width,
-        codedHeight: height,
+        codedWidth: track.video.width,
+        codedHeight: track.video.height,
         ...(description ? { description } : {}),
         optimizeForLatency: false,
       });
@@ -114,12 +133,14 @@ async function decodeMp4ToFrames(url) {
           break;
         }
       }
+      samplesFed += samples.length;
+      if (samplesFed < track.nb_samples && !decodeError) return;
       try {
         await decoder.flush();
+        await Promise.all(pendingCopies);
         if (decodeError) return reject(decodeError);
-        /* Frames may arrive out of presentation order; sort by timestamp. */
-        frames.sort((a, b) => a.timestamp - b.timestamp);
-        resolve({ frames, width, height });
+        if (!bmps || !bmps[0]) return reject(new Error("decode produced no frames"));
+        resolve(bmps);
       } catch (e) {
         reject(e);
       }
@@ -142,7 +163,6 @@ async function loadWebpFrames(base, total, onProgress, isMobile) {
   const indices = [];
   const step = isMobile ? 2 : 1;
   for (let i = 0; i < total; i += step) indices.push(i);
-  const count = indices.length;
 
   const bmps = new Array(total);
   const supportsBitmap = typeof createImageBitmap === "function";
@@ -161,7 +181,7 @@ async function loadWebpFrames(base, total, onProgress, isMobile) {
         await img.decode();
         bmps[i] = img;
       }
-      if (onProgress) onProgress(i);
+      if (onProgress) onProgress(i, bmps);
     } catch (e) {
       /* skip */
     }
@@ -170,23 +190,16 @@ async function loadWebpFrames(base, total, onProgress, isMobile) {
   /* Throttle to max CONCURRENCY simultaneous requests to protect server. */
   const CONCURRENCY = isMobile ? 8 : 16;
   const queue = [...indices];
-  let firstFrameResolve;
-  const firstFrame = new Promise((r) => { firstFrameResolve = r; });
-  let firstDone = false;
 
   const worker = async () => {
     while (queue.length) {
       const i = queue.shift();
       await loadOne(i);
-      if (!firstDone) { firstDone = true; firstFrameResolve(); }
     }
   };
 
   const workers = Array.from({ length: CONCURRENCY }, worker);
   const maxWait = new Promise((r) => setTimeout(r, 10000));
-
-  /* Unblock canvas init as soon as first frame arrives. */
-  await Promise.race([firstFrame, new Promise((r) => setTimeout(r, 5000))]);
 
   /* Wait for all frames OR 10s cap — whichever comes first. */
   await Promise.race([Promise.all(workers), maxWait]);
@@ -206,35 +219,37 @@ export default function SiteScrub({
   srcBase = "/scrub/desktop",
   srcBaseSm = "/scrub/mobile",
   poster = "/scrub/poster.webp",
-  sourceMp4 = "/scrub/source.mp4",
+  sourceMp4 = "/scrub/source-desktop.mp4",
+  sourceMp4Sm = "/scrub/source-mobile.mp4",
 }) {
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const framesRef = useRef({ list: [], count: 0, isVideoFrame: false });
   const stateRef = useRef({ frame: 0 });
   const [loadingVisible, setLoadingVisible] = useState(true);
+  const [isDone, setIsDone] = useState(false);
   const [canvasReady, setCanvasReady] = useState(false);
-  const loadingVideoRef = useRef(null);
 
-  useEffect(() => {
-    const v = loadingVideoRef.current;
-    if (!v) return;
-    const restart = () => { v.currentTime = 0; v.play().catch(() => {}); };
-    v.addEventListener("ended", restart);
-    return () => v.removeEventListener("ended", restart);
-  }, [loadingVisible]);
-
-  /* Lock scroll + hide nav while loading, unlock as soon as loading is done */
+  /* Lock scroll + hide nav while loading, unlock when drawer animation starts */
   useEffect(() => {
     const blockWheel = (e) => e.preventDefault();
     const blockTouch = (e) => e.preventDefault();
 
-    if (loadingVisible) {
+    if (!isDone) {
       document.documentElement.style.overflow = "hidden";
       document.body.style.overflow = "hidden";
       document.body.setAttribute("data-loading", "");
       window.addEventListener("wheel", blockWheel, { passive: false });
       window.addEventListener("touchmove", blockTouch, { passive: false });
+      /* Hard-reset scroll on anything that sneaks through — browser scroll
+         restoration, hash anchors, or programmatic scrolls during loading. */
+      const forceTop = () => window.scrollTo(0, 0);
+      window.addEventListener("scroll", forceTop, { passive: true });
+      return () => {
+        window.removeEventListener("wheel", blockWheel);
+        window.removeEventListener("touchmove", blockTouch);
+        window.removeEventListener("scroll", forceTop);
+      };
     } else {
       document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
@@ -250,7 +265,7 @@ export default function SiteScrub({
       window.removeEventListener("wheel", blockWheel);
       window.removeEventListener("touchmove", blockTouch);
     };
-  }, [loadingVisible]);
+  }, [isDone]);
 
   useEffect(() => {
     const reduce =
@@ -354,24 +369,35 @@ export default function SiteScrub({
       });
     };
 
+    /* Show the canvas as soon as the first frame exists — the rest of
+       the set keeps filling in behind the loading overlay. */
+    const onFirstFrame = (bmps) => {
+      if (cancelled || framesRef.current.count !== 0) return;
+      framesRef.current = { list: bmps, count: bmps.length, isVideoFrame: false };
+      fitCanvas();
+      drawFrame(0);
+      setCanvasReady(true);
+    };
+
     (async () => {
-      /* PRIMARY: preloaded WebP frame sequence. The WebP ladder has 4×
-         the frame count of the WebCodecs path (since we RIFE-interpolate
-         offline to 96 fps before encoding). For silky slow-scroll, more
-         frames per scroll-pixel matters more than hardware-decoded
-         bitmaps. WebCodecs path is kept for future use but disabled
-         here while the WebP density is the priority. */
-      const base = useMobile ? srcBaseSm : srcBase;
       const minDelay = new Promise((r) => setTimeout(r, 4000));
-      const bmps = await loadWebpFrames(base, webpTotal, () => {
-        if (cancelled) return;
-        if (framesRef.current.count === 0) {
-          framesRef.current = { list: bmps, count: bmps.length, isVideoFrame: false };
-          fitCanvas();
-          drawFrame(0);
-          setCanvasReady(true);
-        }
-      }, useMobile);
+
+      let bmps;
+      try {
+        /* PRIMARY: one MP4 request, hardware-decoded into the same
+           96 fps frame set the WebP ladder contained. */
+        const mp4 = useMobile ? sourceMp4Sm : sourceMp4;
+        bmps = await decodeMp4ToBitmaps(mp4, (i, arr) => {
+          if (i === 0) onFirstFrame(arr);
+        });
+      } catch (e) {
+        /* FALLBACK: WebP frame sequence over HTTP. */
+        const base = useMobile ? srcBaseSm : srcBase;
+        bmps = await loadWebpFrames(base, webpTotal, (i, arr) => {
+          if (i === 0) onFirstFrame(arr);
+        }, useMobile);
+      }
+
       if (cancelled) {
         bmps.forEach((b) => b && b.close && b.close());
         return;
@@ -380,12 +406,14 @@ export default function SiteScrub({
       fitCanvas();
       drawFrame(0);
       setCanvasReady(true);
-      /* Wait for both frames loaded AND minimum 6s before hiding */
+      /* Wait for both frames loaded AND minimum 4s, then start the
+         drawer reveal — the overlay slides up and unmounts on
+         transition end. */
       await minDelay;
-      if (!cancelled) setLoadingVisible(false);
+      if (!cancelled) setIsDone(true);
 
       if (reduce) {
-        drawFrame(Math.floor(webpTotal * 0.55));
+        drawFrame(Math.floor(framesRef.current.count * 0.55));
         return;
       }
       installScrollTrigger();
@@ -401,21 +429,25 @@ export default function SiteScrub({
       });
       framesRef.current = { list: [], count: 0, isVideoFrame: false };
     };
-  }, [webpTotal, srcBase, srcBaseSm, sourceMp4]);
+  }, [webpTotal, srcBase, srcBaseSm, sourceMp4, sourceMp4Sm]);
 
   return (
     <>
       {loadingVisible && (
-        <div className="site-loading-overlay" aria-hidden="true">
-          <div className="site-loading-video-wrap">
-            <video
-              ref={loadingVideoRef}
-              src="/loading.mp4"
-              autoPlay
-              muted
-              playsInline
-              className="site-loading-video"
-            />
+        <div
+          className={"site-loading-overlay" + (isDone ? " is-done" : "")}
+          aria-hidden="true"
+          onTransitionEnd={() => { if (isDone) setLoadingVisible(false); }}
+        >
+          <img
+            src="/velocyn-logo-cream.png"
+            alt="Velocyn Solutions"
+            className="site-loading-logo"
+          />
+          <div className="site-loading-mark">
+            <span className="site-loading-ring" />
+            <span className="site-loading-ring site-loading-ring--2" />
+            <span className="site-loading-dot" />
           </div>
         </div>
       )}

@@ -59,12 +59,6 @@ export default function CTA() {
         </a>
       </div>
 
-      <div className="cta-foot">
-        <span>Pakistan · Remote-first · GMT+5</span>
-        <span>Currently booking · Q3 2026</span>
-        <span>Reply within 24 hours, weekdays</span>
-      </div>
-
       <footer className="cta-footer">
         <div className="cta-footer-col cta-footer-brand">
           <img

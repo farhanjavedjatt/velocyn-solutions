@@ -35,6 +35,10 @@ export default function SmoothScroll() {
     /* Tell GSAP to recalculate scroll progress on every Lenis tick. */
     lenis.on("scroll", ScrollTrigger.update);
 
+    /* Expose the instance for programmatic jumps (e.g. the Services
+       disciplines index) so they ride the same smooth scroll. */
+    window.__lenis = lenis;
+
     /* Drive Lenis from GSAP's master ticker so they share one rAF loop. */
     const onTick = (time) => lenis.raf(time * 1000);
     gsap.ticker.add(onTick);
@@ -42,6 +46,7 @@ export default function SmoothScroll() {
 
     return () => {
       gsap.ticker.remove(onTick);
+      if (window.__lenis === lenis) delete window.__lenis;
       lenis.destroy();
     };
   }, []);
