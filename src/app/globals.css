@@ -195,7 +195,7 @@ a { color: inherit; text-decoration: none; }
    behind the bar rather than being cut off by an opaque strip. */
 .chrome.top {
   top: 0;
-  background: rgba(var(--bg-rgb), 0.5);
+  background: rgba(var(--bg-rgb), 0.35);
   backdrop-filter: blur(8px) saturate(1.05);
   -webkit-backdrop-filter: blur(8px) saturate(1.05);
   border-bottom: 1px solid rgba(var(--ink-rgb), 0.08);
@@ -209,7 +209,7 @@ a { color: inherit; text-decoration: none; }
   color: rgba(244, 237, 214, 0.62);
 }
 .chrome.is-on-dark.top {
-  background: rgba(14, 23, 41, 0.55);
+  background: rgba(14, 23, 41, 0.4);
   border-bottom: 1px solid rgba(244, 237, 214, 0.10);
 }
 .chrome.is-on-dark .logo,
@@ -427,6 +427,10 @@ main { position: relative; width: 100%; max-width: 100%; overflow-x: clip; }
   opacity: 1;
 }
 body[data-loading] .chrome { visibility: hidden; pointer-events: none; }
+/* Pre-hydration guard — set by the blocking script in layout.jsx before
+   first paint, removed by SiteScrub when the drawer reveal starts. Stops
+   the header flashing in before the loading overlay paints. */
+html[data-booting] .chrome { visibility: hidden; pointer-events: none; }
 
 /* Navy loading screen — logo, multi-ring spinner, pulsing dot. On load
    complete the overlay slides up like a drawer instead of cutting away. */
@@ -1746,9 +1750,15 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
     bottom: 96px;
     gap: 20px;
   }
-  /* On mobile the text is a full-width band hugging the bottom — keep
-     the blur to that band only so the V animation above stays crisp. */
+  /* On mobile the text is a full-width band hugging the bottom — and
+     backdrop-filter over the constantly-repainting scrub canvas is a
+     mobile-GPU killer (it caused scroll jitter on real devices). Swap
+     the blur for a plain cream wash under the same feathered mask:
+     similar frosted look, no backdrop sampling per frame. */
   .hero-panels::before {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(var(--bg-rgb), 0.55);
     mask-image: radial-gradient(
       ellipse 95% 32% at 50% 88%,
       rgba(0, 0, 0, 0.95) 0%,

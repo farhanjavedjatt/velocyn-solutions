@@ -14,6 +14,12 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
+/* Mobile browsers fire resize when the URL bar collapses/expands during
+   scroll; by default ScrollTrigger refreshes on every one of those,
+   which reads as constant jitter. Ignore them — real orientation
+   changes still refresh via the orientationchange path. */
+ScrollTrigger.config({ ignoreMobileResize: true });
+
 export default function SmoothScroll() {
   useEffect(() => {
     const reduce =

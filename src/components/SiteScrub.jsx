@@ -54,9 +54,16 @@ function getCodecDescription(file, track) {
    and stalls if outputs are retained. The asset is encoded without
    B-frames, so output arrives in presentation order and `onFrame`
    fires with ascending indices — the canvas can draw mid-decode.
-   Returns the (possibly still-filling) bitmap array; throws on any
-   setup/decode failure so the caller can fall back to WebP frames. */
-async function decodeMp4ToBitmaps(url, onFrame) {
+
+   keepEvery: store only every Nth decoded frame (others are closed
+   immediately). On mobile we keep every 2nd frame — half the bitmap
+   memory, matching the proven WebP-fallback density; the crossfade
+   hides the difference on small screens.
+
+   A 20s watchdog rejects if the decoder stalls (some mobile hardware
+   decoders deadlock under pressure) so the caller can fall back to
+   WebP frames instead of hanging the loading screen forever. */
+async function decodeMp4ToBitmaps(url, onFrame, keepEvery = 1) {
   if (typeof VideoDecoder === "undefined") {
     throw new Error("WebCodecs not available");
   }
@@ -74,23 +81,42 @@ async function decodeMp4ToBitmaps(url, onFrame) {
     let bmps = null;
     let samplesFed = 0;
     let outIndex = 0;
+    let settled = false;
     const pendingCopies = [];
 
-    file.onError = (e) => reject(new Error("mp4box: " + e));
+    const watchdog = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      try { decoder && decoder.close(); } catch (e) { /* already closed */ }
+      reject(new Error("decode watchdog timeout"));
+    }, 20000);
+    const settle = (fn, arg) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(watchdog);
+      fn(arg);
+    };
+
+    file.onError = (e) => settle(reject, new Error("mp4box: " + e));
 
     file.onReady = (info) => {
       track = info.videoTracks[0];
-      if (!track) return reject(new Error("no video track"));
-      bmps = new Array(track.nb_samples);
+      if (!track) return settle(reject, new Error("no video track"));
+      bmps = new Array(Math.ceil(track.nb_samples / keepEvery));
 
       decoder = new VideoDecoder({
         output: (frame) => {
           const i = outIndex++;
+          if (i % keepEvery !== 0) {
+            frame.close();
+            return;
+          }
+          const slot = i / keepEvery;
           pendingCopies.push(
             createImageBitmap(frame)
               .then((bmp) => {
-                bmps[i] = bmp;
-                if (onFrame) onFrame(i, bmps);
+                bmps[slot] = bmp;
+                if (onFrame) onFrame(slot, bmps);
               })
               .catch((e) => {
                 decodeError = decodeError || e;
@@ -117,6 +143,7 @@ async function decodeMp4ToBitmaps(url, onFrame) {
     };
 
     file.onSamples = async (id, user, samples) => {
+      let fed = 0;
       for (const sample of samples) {
         const ts = (sample.cts * 1e6) / sample.timescale;
         const dur = (sample.duration * 1e6) / sample.timescale;
@@ -132,17 +159,23 @@ async function decodeMp4ToBitmaps(url, onFrame) {
           decodeError = e;
           break;
         }
+        /* Yield every 64 chunks so the output callbacks can drain the
+           decoder's frame pool — mobile hardware decoders stall if input
+           is force-fed while outputs are still being copied. */
+        if ((++fed & 63) === 0) {
+          await new Promise((r) => setTimeout(r, 0));
+        }
       }
       samplesFed += samples.length;
       if (samplesFed < track.nb_samples && !decodeError) return;
       try {
         await decoder.flush();
         await Promise.all(pendingCopies);
-        if (decodeError) return reject(decodeError);
-        if (!bmps || !bmps[0]) return reject(new Error("decode produced no frames"));
-        resolve(bmps);
+        if (decodeError) return settle(reject, decodeError);
+        if (!bmps || !bmps[0]) return settle(reject, new Error("decode produced no frames"));
+        settle(resolve, bmps);
       } catch (e) {
-        reject(e);
+        settle(reject, e);
       }
     };
 
@@ -254,6 +287,7 @@ export default function SiteScrub({
       document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
       document.body.removeAttribute("data-loading");
+      document.documentElement.removeAttribute("data-booting");
       window.removeEventListener("wheel", blockWheel);
       window.removeEventListener("touchmove", blockTouch);
     }
@@ -262,6 +296,7 @@ export default function SiteScrub({
       document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
       document.body.removeAttribute("data-loading");
+      document.documentElement.removeAttribute("data-booting");
       window.removeEventListener("wheel", blockWheel);
       window.removeEventListener("touchmove", blockTouch);
     };
@@ -385,11 +420,13 @@ export default function SiteScrub({
       let bmps;
       try {
         /* PRIMARY: one MP4 request, hardware-decoded into the same
-           96 fps frame set the WebP ladder contained. */
+           96 fps frame set the WebP ladder contained. Mobile keeps
+           every 2nd frame — half the bitmap memory (iOS purges GPU
+           memory under pressure, which blanked the canvas). */
         const mp4 = useMobile ? sourceMp4Sm : sourceMp4;
         bmps = await decodeMp4ToBitmaps(mp4, (i, arr) => {
           if (i === 0) onFirstFrame(arr);
-        });
+        }, useMobile ? 2 : 1);
       } catch (e) {
         /* FALLBACK: WebP frame sequence over HTTP. */
         const base = useMobile ? srcBaseSm : srcBase;
