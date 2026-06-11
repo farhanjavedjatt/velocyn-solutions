@@ -29,6 +29,18 @@ export default function SmoothScroll() {
 
     if (reduce) return; // honor user preference — no smoothing
 
+    /* TOUCH DEVICES: skip Lenis entirely. With syncTouch:false it adds
+       zero smoothing on touch — but it still registers touchstart/move
+       listeners with { passive: false }, which forces iOS into
+       synchronous scrolling: the compositor must wait on the main
+       thread before committing every touch scroll delta. During the
+       hero scrub the main thread is busy on each scroll event (canvas
+       draw + React updates), so deltas queue and land in bursts — the
+       page lurches past the finger then snaps back. Native scrolling +
+       ScrollTrigger's own scroll listener is all a phone needs. */
+    const touch = window.matchMedia("(pointer: coarse)").matches;
+    if (touch) return;
+
     const lenis = new Lenis({
       duration: 0.9,                                 // snappier than 1.15
       easing: (t) => 1 - Math.pow(1 - t, 3),         // cubic ease-out
