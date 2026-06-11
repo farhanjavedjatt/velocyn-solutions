@@ -420,7 +420,10 @@ main { position: relative; width: 100%; max-width: 100%; overflow-x: clip; }
      correction the hero canvas reads visibly duller than the surrounding
      paper and than the (bright-cream) loading animation, so the hand-off
      darkens. A flat +10% brightness lifts the canvas cream onto the brand
-     cream while keeping the navy strokes deep. */
+     cream while keeping the navy strokes deep.
+     DESKTOP ONLY: the mobile assets bake this lift into the encode and
+     SiteScrub clears this filter inline on mobile — a per-frame filter
+     pass over the repainting canvas causes scroll jitter on phone GPUs. */
   filter: brightness(1.1);
 }
 .site-scrub-canvas.is-ready {
@@ -1662,6 +1665,20 @@ main p, main li, .hero-lead, .service-card p, .case-row-v {
   /* Reduce hover-driven motion since touch users tap, not hover */
   .case-stack-chip:hover,
   .tech-item:hover { transform: none; }
+
+  /* HEADER: no frosted glass on touch devices. backdrop-filter over the
+     hero's constantly-repainting scrub canvas forces a full re-blur every
+     scroll frame — the same mobile-GPU killer that made the hero text
+     wash jitter (see .hero-panels::before mobile override). A slightly
+     more opaque flat wash reads nearly identical at this size. */
+  .chrome.top {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(var(--bg-rgb), 0.72);
+  }
+  .chrome.is-on-dark.top {
+    background: rgba(14, 23, 41, 0.78);
+  }
 
   /* Comfortable tap targets (>=44px) for the nav links that remain visible
      on touch tablets and for the stacked footer links. */

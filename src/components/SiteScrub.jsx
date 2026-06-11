@@ -325,6 +325,15 @@ export default function SiteScrub({
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const useMobile = window.innerWidth < 900;
 
+    /* The desktop canvas carries a CSS brightness(1.1) filter to lift the
+       asset's baked-in muted cream onto the brand cream (see globals.css).
+       A CSS filter over a canvas that repaints every scroll frame costs a
+       full-screen filter pass per frame — measurable jank on phone GPUs.
+       The MOBILE assets have the +10% lift baked into the encode instead,
+       so on mobile we clear the filter. Set inline (not via media query)
+       so the condition can never drift from the asset choice above. */
+    if (useMobile) canvas.style.filter = "none";
+
     const fitCanvas = () => {
       const rect = wrap.getBoundingClientRect();
       canvas.width = Math.max(1, Math.floor(rect.width * dpr));
