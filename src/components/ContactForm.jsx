@@ -5,6 +5,9 @@
    ========================================================================= */
 import { useState } from "react";
 
+const CALENDLY_URL =
+  process.env.NEXT_PUBLIC_CALENDLY_URL || "https://calendly.com/";
+
 export default function ContactForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -95,6 +98,16 @@ export default function ContactForm() {
           <span>{status === "sending" ? "Sending…" : "Send message"}</span>
           <span className="arrow">→</span>
         </button>
+        <a
+          href={CALENDLY_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="contact-book"
+          data-magnetic
+        >
+          <span>Book a call</span>
+          <span className="arrow">→</span>
+        </a>
         {status === "error" && (
           <span className="contact-error">{error}</span>
         )}

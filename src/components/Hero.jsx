@@ -63,33 +63,31 @@ const PANELS = [
 ];
 
 function panelOpacity(progress, index, total) {
-  /* Each panel owns a span of scroll progress. It's fully visible while
-     progress is inside its own span, fades over a transition zone into
-     the neighbors. The first panel is fully visible from progress=0
-     (no fade-in at the very top of the page — otherwise the hero would
-     be a blank screen on initial paint, since the user lands at scroll
-     position 0 where the fade-in would have just started). */
+  /* Each panel owns a span of scroll progress. The transition passes
+     THROUGH ZERO: the outgoing panel fades fully out before its span
+     ends, and the incoming panel fades in after its own span starts.
+     Panels are never semi-opaque on top of each other — overlapping
+     fades read as flickering/ghosted text while scrolling (worst on
+     mobile momentum scrolls). The first panel is fully visible from
+     progress=0 so the hero isn't blank on initial paint. */
   const span = 1 / total;
-  /* Narrow crossfade zone — panels swap almost instantly instead of
-     lingering half-faded on top of each other. */
+  /* Narrow fade zone — panels swap quickly instead of lingering. */
   const fade = span * 0.12;
   const start = index * span;
   const end = (index + 1) * span;
 
-  // Before this panel: invisible (with fade-in from previous panel's tail)
-  if (progress <= start - fade) return 0;
-  if (progress < start) return (progress - (start - fade)) / fade;
-
-  // Inside this panel's range: fully visible
-  if (progress <= end) {
-    // ...except the very last panel doesn't need to fade out at end
-    if (index === total - 1) return 1;
-    return 1;
+  let o = 1;
+  // Fade in just after own span starts (first panel skips fade-in)
+  if (index > 0) {
+    if (progress <= start) return 0;
+    if (progress < start + fade) o = (progress - start) / fade;
   }
-
-  // After this panel's range: fade out into next panel
-  if (progress < end + fade) return 1 - (progress - end) / fade;
-  return 0;
+  // Fade out just before own span ends (last panel skips fade-out)
+  if (index < total - 1) {
+    if (progress >= end) return 0;
+    if (progress > end - fade) o = Math.min(o, (end - progress) / fade);
+  }
+  return o;
 }
 
 function HeroPanel({ panel, index, total, progress, mounted }) {

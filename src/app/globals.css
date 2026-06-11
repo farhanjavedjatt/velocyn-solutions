@@ -708,7 +708,12 @@ main { position: relative; z-index: 1; }
   gap: 32px;
 }
 .hero-headline {
-  font-size: clamp(40px, 7.6vw, 148px);
+  /* Width-driven size, but capped by viewport HEIGHT too: on short, wide
+     laptops (e.g. 1920×1080 at 125% OS scaling → ~1536×700 CSS px) a pure
+     vw size wraps to 4 lines and overflows the bottom-anchored panel,
+     clipping the lead under the fixed header. 12vh keeps the worst-case
+     panel (4 wrapped lines + lead + CTAs) inside the sticky viewport. */
+  font-size: clamp(40px, min(7.6vw, 12vh), 148px);
   max-width: 14ch;
   line-height: 0.95;
 }
@@ -1021,12 +1026,15 @@ main { position: relative; z-index: 1; }
   padding-bottom: 4vh;
   opacity: 0;
   transform: translateY(40px);
-  transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
+  /* Outgoing fast + incoming delayed (see .case-card-v2): stacked cards
+     must never be semi-opaque simultaneously or text ghosts on scroll. */
+  transition: opacity 0.28s var(--ease), transform 0.28s var(--ease);
   pointer-events: none;
 }
 .service-card.active {
   opacity: 1;
   transform: translateY(0);
+  transition: opacity 0.5s var(--ease) 0.24s, transform 0.5s var(--ease) 0.24s;
   pointer-events: auto;
 }
 .service-card-num {
@@ -1240,12 +1248,17 @@ main { position: relative; z-index: 1; }
   padding: calc(var(--topbar-h) + 60px) calc(var(--frame) + 56px) calc(var(--frame) + 90px);
   opacity: 0;
   transform: translateY(40px) scale(0.985);
-  transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+  /* Outgoing card: fast fade, no delay — it must be gone before the
+     incoming card appears. Overlapping crossfades of stacked cards
+     read as flickering/double-exposed text while scrolling. */
+  transition: opacity 0.28s var(--ease), transform 0.28s var(--ease);
   pointer-events: none;
 }
 .case-card-v2.active {
   opacity: 1;
   transform: translateY(0) scale(1);
+  /* Incoming card: waits for the outgoing fade to finish, then eases in. */
+  transition: opacity 0.5s var(--ease) 0.24s, transform 0.5s var(--ease) 0.24s;
   pointer-events: auto;
 }
 /* Background case watermark — hidden per user request. */
@@ -1411,51 +1424,6 @@ main { position: relative; z-index: 1; }
   margin-bottom: 0;
   max-width: 13ch;
 }
-.cta-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  flex-wrap: wrap;
-  gap: 40px;
-  border-top: 1px solid var(--rule);
-  padding-top: 36px;
-}
-.cta-row .field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.cta-row .field .l {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--ink-dim);
-}
-.cta-row .field .v {
-  font-family: var(--serif);
-  font-size: 28px;
-  color: var(--ink);
-}
-.cta-book {
-  font-family: var(--serif);
-  font-size: clamp(22px, 2vw, 32px);
-  font-style: italic;
-  color: var(--ink);
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 14px;
-  cursor: none;
-  white-space: nowrap;
-}
-.cta-book .arrow {
-  display: inline-block;
-  transition: transform 0.4s var(--ease);
-  font-style: normal;
-}
-.cta-book:hover .arrow { transform: translateX(8px); }
-
 /* The proper footer — distinct zone under the contact block. */
 .cta-footer {
   margin-top: 64px;
@@ -1579,6 +1547,29 @@ main { position: relative; z-index: 1; }
 .contact-submit:disabled { opacity: 0.55; }
 .contact-submit .arrow { transition: transform 0.3s var(--ease); }
 .contact-submit:hover .arrow { transform: translateX(4px); }
+/* Ghost twin of .contact-submit — outlined, opens Calendly. */
+.contact-book {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 14px 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  cursor: none;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.contact-book:hover {
+  border-color: var(--ink);
+  background: rgba(var(--ink-rgb), 0.06);
+}
+.contact-book .arrow { transition: transform 0.3s var(--ease); }
+.contact-book:hover .arrow { transform: translateX(4px); }
 .contact-error {
   font-family: var(--mono);
   font-size: 10px;
@@ -1628,7 +1619,7 @@ main, main h1, main h2, main h3, main h4, main p, main li, main span, main a {
     0 0 1px rgba(var(--bg-rgb), 0.85),
     0 0 4px rgba(var(--bg-rgb), 0.45);
 }
-main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
+main p, main li, .hero-lead, .service-card p, .case-row-v {
   font-weight: 450;
 }
 /* The largest display type — give it a softer, wider halo so the serif
@@ -1664,7 +1655,7 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
   .contact-field input,
   .contact-field textarea,
   .contact-submit,
-  .cta-book,
+  .contact-book,
   .nav-cta,
   .hero-cta,
   a { cursor: auto; }
@@ -2041,16 +2032,6 @@ main p, main li, .hero-lead, .service-card p, .case-row-v, .field .v {
     margin-bottom: 0;
   }
   .contact-form { margin-bottom: 0; }
-  .cta-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-  .cta-row .field .v { font-size: 20px; }
-  .cta-book {
-    font-size: clamp(20px, 5vw, 28px);
-    white-space: normal;
-  }
   .cta-footer {
     margin-top: 48px;
     padding-top: 32px;

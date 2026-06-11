@@ -24,41 +24,6 @@ export default function CTA() {
         </div>
       </div>
 
-      <div className="cta-row">
-        <div className="field">
-          <span className="l">Email</span>
-          <a className="v" href={`mailto:${SUPPORT_EMAIL}`} data-magnetic>
-            {SUPPORT_EMAIL}
-          </a>
-        </div>
-        <div className="field">
-          <span className="l">Web</span>
-          <span className="v">velocynsolutions.com</span>
-        </div>
-        <div className="field">
-          <span className="l">Book a call</span>
-          <a
-            className="v"
-            href={CALENDLY_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-magnetic
-          >
-            calendly.com/mahrozabass
-          </a>
-        </div>
-        <a
-          href={CALENDLY_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="cta-book"
-          data-magnetic
-        >
-          <span>Start a discovery call</span>
-          <span className="arrow">→</span>
-        </a>
-      </div>
-
       <footer className="cta-footer">
         <div className="cta-footer-col cta-footer-brand">
           <img

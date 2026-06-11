@@ -316,7 +316,13 @@ export default function SiteScrub({
     if (!ctx) return;
     ctx.imageSmoothingQuality = "low";
 
-    const dpr = 1;
+    /* Render the canvas at device resolution (capped at 2× — beyond that
+       the cost outweighs visible gain). At dpr=1 a 3× phone draws the
+       scrub at 1/9th of its screen pixels and the upscale reads as a
+       blurry, low-quality video. The backing store itself is small
+       (~5MB at 2× on a phone) — the bitmap set, not the canvas, is the
+       memory budget. */
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const useMobile = window.innerWidth < 900;
 
     const fitCanvas = () => {
