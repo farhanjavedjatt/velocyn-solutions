@@ -2,7 +2,7 @@
 /* =========================================================================
    APP — composes the scenes and the chrome.
    ========================================================================= */
-import { useEffect, useState, Fragment } from "react";
+import { useEffect, useState, useRef, Fragment } from "react";
 import { Grain, Frame, Cursor, TopBar, ProgressLine } from "./Chrome";
 import SmoothScroll from "./SmoothScroll";
 import Hero from "./Hero";
@@ -13,7 +13,11 @@ import CTA from "./CTA";
 
 export default function App() {
   const [scene, setScene] = useState(1);
-  const [overallProgress, setProgress] = useState(0);
+  /* Progress bar fill is written straight to the DOM — putting a fresh
+     float into React state here re-rendered the ENTIRE app tree on
+     every scrolled pixel. setScene stays as state but only changes
+     value at section boundaries, so React bails out between them. */
+  const progressBarRef = useRef(null);
 
   useEffect(() => {
     let raf = 0;
@@ -31,7 +35,10 @@ export default function App() {
         });
         setScene(current);
         const max = document.documentElement.scrollHeight - window.innerHeight;
-        setProgress(max > 0 ? window.scrollY / max : 0);
+        if (progressBarRef.current) {
+          const p = max > 0 ? window.scrollY / max : 0;
+          progressBarRef.current.style.transform = `scaleX(${p})`;
+        }
         raf = 0;
       });
     };
@@ -50,7 +57,7 @@ export default function App() {
       <Frame />
       <Cursor />
       <TopBar onDark={scene > 1} />
-      <ProgressLine progress={overallProgress} onDark={scene > 1} />
+      <ProgressLine barRef={progressBarRef} onDark={scene > 1} />
 
       <main>
         <Hero />

@@ -29,17 +29,23 @@ export default function SmoothScroll() {
 
     if (reduce) return; // honor user preference — no smoothing
 
-    /* TOUCH DEVICES: skip Lenis entirely. With syncTouch:false it adds
-       zero smoothing on touch — but it still registers touchstart/move
-       listeners with { passive: false }, which forces iOS into
-       synchronous scrolling: the compositor must wait on the main
-       thread before committing every touch scroll delta. During the
-       hero scrub the main thread is busy on each scroll event (canvas
-       draw + React updates), so deltas queue and land in bursts — the
-       page lurches past the finger then snaps back. Native scrolling +
-       ScrollTrigger's own scroll listener is all a phone needs. */
-    const touch = window.matchMedia("(pointer: coarse)").matches;
-    if (touch) return;
+    /* TOUCH DEVICES: no Lenis (its syncTouch:false mode registers
+       non-passive touch listeners without taking control — pure
+       overhead). But native iOS touch scrolling can't drive a pinned
+       scrub section either: WebKit has unfixed bugs (documented by
+       GSAP, present since 2017) where the scroll position is
+       intermittently MISREPORTED during touch momentum — the sticky
+       pin, canvas scrub, and panel opacities consume the bogus value,
+       then snap when the correction lands ("page lurches down, comes
+       back up", scaling with swipe speed). normalizeScroll is GSAP's
+       purpose-built workaround: it intercepts touch deltas and applies
+       scrolling on the JS thread so scroll position, JS reads, and
+       paint always agree. This is what production scrollytelling sites
+       run on iOS. */
+    if (ScrollTrigger.isTouch === 1) {
+      ScrollTrigger.normalizeScroll(true);
+      return () => ScrollTrigger.normalizeScroll(false);
+    }
 
     const lenis = new Lenis({
       duration: 0.9,                                 // snappier than 1.15

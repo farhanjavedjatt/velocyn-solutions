@@ -73,10 +73,13 @@ export function TopBar({ onDark }) {
   );
 }
 
-export function ProgressLine({ progress, onDark }) {
+/* The fill is driven by direct DOM writes through `barRef` from App's
+   scroll handler, NOT React state — a per-scroll-frame setState in App
+   re-rendered the entire app tree on every scrolled pixel. */
+export function ProgressLine({ barRef, onDark }) {
   return (
     <div className={"progress-line" + (onDark ? " is-on-dark" : "")} aria-hidden="true">
-      <span style={{ transform: `scaleX(${progress})` }}></span>
+      <span ref={barRef} style={{ transform: "scaleX(0)" }}></span>
     </div>
   );
 }

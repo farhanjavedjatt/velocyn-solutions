@@ -11,8 +11,8 @@
    After the hero passes, normal page content (Services / Cases / Stack /
    CTA) continues as before.
    ========================================================================= */
-import { useRef, Fragment } from "react";
-import { useSectionProgress, useScrollY } from "@/lib/hooks";
+import { useRef, useState, useEffect, Fragment } from "react";
+import { useSectionProgress } from "@/lib/hooks";
 import SiteScrub from "./SiteScrub";
 
 const HERO_SCRUB_FRAMES = 768;
@@ -123,9 +123,17 @@ export default function Hero() {
   const sectionRef = useRef(null);
   const progress = useSectionProgress(sectionRef);
   /* The scroll cue only invites — once the visitor starts scrolling it
-     fades away and stays away until they return to the very top. */
-  const scrollY = useScrollY();
-  const cueHidden = scrollY > 24;
+     fades away and stays away until they return to the very top.
+     Boolean state (not raw scrollY): it only changes value when the
+     24px threshold is crossed, so React bails out of re-rendering the
+     hero on every other scroll frame for the page's whole lifetime. */
+  const [cueHidden, setCueHidden] = useState(false);
+  useEffect(() => {
+    const on = () => setCueHidden(window.scrollY > 24);
+    window.addEventListener("scroll", on, { passive: true });
+    on();
+    return () => window.removeEventListener("scroll", on);
+  }, []);
 
   return (
     <section
